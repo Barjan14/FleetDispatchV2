@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/AdminDashboard.v2.css';
 import { supabase } from '../supabaseClient';
@@ -20,43 +20,135 @@ import UserFormModal from './modals/UserFormModal';
 import { logVehicleChange, logVehicleUpdate, fetchVehicleChangeLogs } from '../utils/vehicleLogger';
 
 const NAV = [
-  { key:'overview',  icon:'📊', label:'Overview'  },
-  { key:'vehicles',  icon:'🚗', label:'Vehicles'  },
-  { key:'users',     icon:'👥', label:'Users'     },
-  { key:'bookings',  icon:'📅', label:'Bookings'  },
-  { key:'fleets',    icon:'🗂️', label:'Fleets'    },
-  { key:'logs',      icon:'📋', label:'Logs'      },
+  { key: 'overview', icon: '📊', label: 'Overview' },
+  { key: 'vehicles', icon: '🚗', label: 'Vehicles' },
+  { key: 'users',    icon: '👥', label: 'Users'    },
+  { key: 'bookings', icon: '📅', label: 'Bookings' },
+  { key: 'fleets',   icon: '🗂️', label: 'Fleets'   },
+  { key: 'logs',     icon: '📋', label: 'Logs'     },
 ];
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [tab, setTab]               = useState('overview');
-  const [loading, setLoading]       = useState(true);
-  const [toast, setToast]           = useState({ msg:'', type:'' });
+  
+  // UI State
+  const [tab, setTab] = useState('overview');
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState({ msg: '', type: '' });
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [vehicleSort, setVehicleSort]   = useState('name_asc');
+  const [vehicleSort, setVehicleSort] = useState('name_asc');
 
+  // Data State
   const [adminUser, setAdminUser] = useState({});
-  const [stats, setStats]         = useState({});
-  const [vehicles, setVehicles]   = useState([]);
-  const [users, setUsers]         = useState([]);
-  const [fleets, setFleets]       = useState([]);
-  const [bookings, setBookings]   = useState([]);
+  const [stats, setStats] = useState({});
+  const [vehicles, setVehicles] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [fleets, setFleets] = useState([]);
+  const [bookings, setBookings] = useState([]);
   const [vehicleLogs, setVehicleLogs] = useState([]);
   const [logsLoading, setLogsLoading] = useState(false);
 
+  // Modal State
   const [modalType, setModalType] = useState('');
-  const [selectedVehicle, setSelectedVehicle]     = useState(null);
-  const [selectedUser, setSelectedUser]     = useState(null);
+  const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
 
-  const [vForm, setVForm] = useState({ name:'', plate_number:'', model:'', year:'', condition:'Good', fleet_id:'' });
+  // Form State
+  const [vForm, setVForm] = useState({ name: '', plate_number: '', model: '', year: '', condition: 'Good', fleet_id: '' });
   const [uForm, setUForm] = useState({
-    username:'', email:'', password:'', is_staff:false,
-    profile:{ employee_id:'', department:'', phone:'' }
+    username: '', email: '', password: '', is_staff: false,
+    profile: { employee_id: '', department: '', phone: '' }
   });
 
-  // ── sorted vehicles (unchanged logic) ─────────────────────
-  const sortedVehicles = React.useMemo(() => {
+  // ── Helper: Show Toast ──────────────────────────────────────
+  const showToast = (msg, type = 'ok') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast({ msg: '', type: '' }), 3000);
+  };
+
+  // ── Auth Guard ────────────────────────────────────────────
+  useEffect(() => {
+    const isAdmin = localStorage.getItem('isAdmin') === 'true';
+    if (!isAdmin) {
+      navigate('/admin-login');
+      return;
+    }
+    const stored = localStorage.getItem('adminUser');
+    if (stored) setAdminUser(JSON.parse(stored));
+  }, [navigate]);
+
+  // ── Data Fetching ──────────────────────────────────────────
+  const fetchAll = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/admin-login');
+        return;
+      }
+
+      const [vRes, uRes, fRes, bRes, cV, cU, cF, cB, cP, cO] = await Promise.all([
+        supabase.from('vehicles').select('*').order('name'),
+        supabase.from('employee_profiles').select('*').order('created_at'),
+        supabase.from('fleets').select('*, vehicles(id)'),
+        supabase.from('vehicle_bookings').select(`
+          *,
+          vehicles ( id, name, plate_number ),
+          employee_profiles!vehicle_bookings_user_id_fkey ( employee_id )
+        `).order('created_at', { ascending: false }),
+        supabase.from('vehicles').select('*', { count: 'exact', head: true }),
+        supabase.from('employee_profiles').select('*', { count: 'exact', head: true }),
+        supabase.from('fleets').select('*', { count: 'exact', head: true }),
+        supabase.from('vehicle_bookings').select('*', { count: 'exact', head: true }),
+        supabase.from('vehicle_bookings').select('*', { count: 'exact', head: true }).eq('status', 'Pending'),
+        supabase.from('vehicle_bookings').select('*', { count: 'exact', head: true }).eq('status', 'Ongoing'),
+      ]);
+
+      setVehicles(vRes.data || []);
+      
+      setUsers((uRes.data || []).map(usr => ({
+        id: usr.id,
+        user_id: usr.user_id,
+        username: usr.employee_id || '—',
+        is_staff: usr.role === 'admin',
+        profile: {
+          employee_id: usr.employee_id || '',
+          department: usr.department || '',
+          phone: usr.phone || '',
+        },
+      })));
+
+      setFleets((fRes.data || []).map(fl => ({ ...fl, vehicles: fl.vehicles || [] })));
+
+      setBookings((bRes.data || []).map(bk => ({
+        ...bk,
+        user: {
+          username: bk.employee_profiles?.employee_id || 'Unknown',
+          profile: { employee_id: bk.employee_profiles?.employee_id || '' },
+        },
+        vehicle: bk.vehicles || {}, 
+      })));
+
+      setStats({
+        totalVehicles: cV.count || 0,
+        totalUsers: cU.count || 0,
+        totalFleets: cF.count || 0,
+        totalBookings: cB.count || 0,
+        pendingBookings: cP.count || 0,
+        ongoingBookings: cO.count || 0,
+      });
+
+    } catch (e) {
+      console.error('Fetch Error:', e);
+      showToast('Failed to load data.', 'err');
+    } finally {
+      setLoading(false);
+    }
+  }, [navigate]);
+
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  // ── Sorting ───────────────────────────────────────────────
+  const sortedVehicles = useMemo(() => {
     const list = [...vehicles];
     switch (vehicleSort) {
       case 'name_desc': list.sort((a,b)=>String(b.name||'').localeCompare(String(a.name||''))); break;
@@ -70,373 +162,125 @@ export default function AdminDashboard() {
 
   const cycleVehicleSort = () => {
     const order = ['name_asc','name_desc','condition','available','newest'];
-    const next  = order[(order.indexOf(vehicleSort)+1) % order.length];
+    const next = order[(order.indexOf(vehicleSort)+1) % order.length];
     setVehicleSort(next);
     const label = { name_asc:'Name (A→Z)', name_desc:'Name (Z→A)', condition:'Condition', available:'Availability', newest:'Newest' }[next];
     showToast(`Sorted by: ${label}`, 'ok');
   };
 
-  const showToast = (msg, type='ok') => {
-    setToast({ msg, type });
-    setTimeout(() => setToast({ msg:'', type:'' }), 3000);
-  };
-
-  // ── Auth guard ────────────────────────────────────────────
-  useEffect(() => {
-    if (localStorage.getItem('isAdmin') !== 'true') { navigate('/admin-login'); return; }
-    const stored = localStorage.getItem('adminUser');
-    if (stored) setAdminUser(JSON.parse(stored));
-  }, [navigate]);
-
-  // ── Fetch all data from Supabase ──────────────────────────
-  const fetchAll = useCallback(async () => {
-    // Re-check session is still valid
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      showToast('Session expired. Please log in again.', 'err');
-      localStorage.removeItem('adminToken');
-      localStorage.removeItem('isAdmin');
-      navigate('/admin-login');
-      return;
-    }
-
-    try {
-      // Vehicles
-      const { data: v, error: vErr } = await supabase
-        .from('vehicles')
-        .select('*')
-        .order('name');
-      if (vErr) throw vErr;
-
-      // Users (employee_profiles)
-      const { data: u, error: uErr } = await supabase
-        .from('employee_profiles')
-        .select('id, user_id, employee_id, department, phone, role')
-        .order('created_at');
-      if (uErr) throw uErr;
-
-      // Fleets with vehicles relation for count
-      const { data: f, error: fErr } = await supabase
-        .from('fleets')
-        .select('*, vehicles(id)');
-      if (fErr) throw fErr;
-
-      // Bookings with nested vehicle + employee_profiles
-      const { data: b, error: bErr } = await supabase
-        .from('vehicle_bookings')
-        .select(`
-          *,
-          vehicle:vehicles ( id, name, plate_number ),
-          employee_profiles!vehicle_bookings_user_id_fkey ( employee_id )
-        `)
-        .order('created_at', { ascending: false });
-      if (bErr) throw bErr;
-
-      // Stats via count queries
-      const [
-        { count: cV }, { count: cU }, { count: cF },
-        { count: cB }, { count: cP }, { count: cO },
-      ] = await Promise.all([
-        supabase.from('vehicles').select('*',          { count:'exact', head:true }),
-        supabase.from('employee_profiles').select('*', { count:'exact', head:true }),
-        supabase.from('fleets').select('*',            { count:'exact', head:true }),
-        supabase.from('vehicle_bookings').select('*',  { count:'exact', head:true }),
-        supabase.from('vehicle_bookings').select('*',  { count:'exact', head:true }).eq('status','Pending'),
-        supabase.from('vehicle_bookings').select('*',  { count:'exact', head:true }).eq('status','Ongoing'),
-      ]);
-
-      setVehicles(v || []);
-
-      // Shape users to match old Django shape so modal JSX doesn't change
-      setUsers((u || []).map(usr => ({
-        id:       usr.id,
-        user_id:  usr.user_id,
-        username: usr.employee_id || usr.user_id?.slice(0,8) || '—',
-        email:    '',   // not stored in employee_profiles; omit or fetch separately if needed
-        is_staff: usr.role === 'admin',
-        profile: {
-          employee_id: usr.employee_id || '',
-          department:  usr.department  || '',
-          phone:       usr.phone       || '',
-        },
-      })));
-
-      setFleets((f || []).map(fl => ({ ...fl, vehicles: fl.vehicles || [] })));
-
-      // Shape bookings to match old Django shape
-      setBookings((b || []).map(bk => ({
-        ...bk,
-        // keep nested shape the modal/table expects
-        user: {
-          username: bk.employee_profiles?.employee_id || 'Unknown',
-          profile:  { employee_id: bk.employee_profiles?.employee_id || '' },
-        },
-        vehicle: bk.vehicle || {},
-      })));
-
-      setStats({
-        totalVehicles:  cV,
-        totalUsers:     cU,
-        totalFleets:    cF,
-        totalBookings:  cB,
-        pendingBookings:cP,
-        ongoingBookings:cO,
-      });
-
-    } catch (e) {
-      console.error('Error fetching data:', e);
-      showToast('Failed to load data.', 'err');
-    } finally {
-      setLoading(false);
-    }
-  }, [navigate]);
-
-  useEffect(() => { fetchAll(); }, [fetchAll]);
-
-  // ── Fetch vehicle logs when tab changes to logs ────────────
-  useEffect(() => {
-    if (tab === 'logs') {
-      const loadLogs = async () => {
-        setLogsLoading(true);
-        const logs = await fetchVehicleChangeLogs();
-        setVehicleLogs(logs);
-        setLogsLoading(false);
-      };
-      loadLogs();
-    }
-  }, [tab]);
-
-  const closeModal = () => { 
-    setModalType(''); 
-    setSelectedVehicle(null); 
-    setSelectedUser(null);
-  };
-
-  const logout = async () => {
-    await supabase.auth.signOut();
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('isAdmin');
-    localStorage.removeItem('adminUser');
-    navigate('/admin-login');
-  };
-  // ── VEHICLE CRUD ──────────────────────────────────────────
+  // ── Vehicle CRUD ──────────────────────────────────────────
   const openAddVehicle = () => {
-    setVForm({ name:'', plate_number:'', model:'', year:'', condition:'Good', fleet_id:'' });
+    setVForm({ name: '', plate_number: '', model: '', year: '', condition: 'Good', fleet_id: '' });
     setModalType('addVehicle');
   };
+
   const openEditVehicle = (v) => {
-    setVForm({ name:v.name, plate_number:v.plate_number, model:v.model||'', year:v.year||'', condition:v.condition||'Good', fleet_id:v.fleet_id||'' });
-    setSelectedVehicle(v); 
+    setVForm({ ...v, year: v.year?.toString() || '' });
+    setSelectedVehicle(v);
     setModalType('editVehicle');
   };
+
   const saveVehicle = async () => {
     const isEdit = modalType === 'editVehicle';
-    const payload = {
-      name:         vForm.name,
-      plate_number: vForm.plate_number,
-      model:        vForm.model,
-      year:         vForm.year ? parseInt(vForm.year) : null,
-      condition:    vForm.condition,
-      fleet_id:     vForm.fleet_id || null,
+    const payload = { 
+      name: vForm.name, 
+      plate_number: vForm.plate_number, 
+      model: vForm.model, 
+      year: vForm.year ? parseInt(vForm.year) : null, 
+      condition: vForm.condition, 
+      fleet_id: vForm.fleet_id || null 
     };
-    
+
     try {
       if (isEdit) {
-        // Log changes before updating
-        const oldVehicle = selectedVehicle;
-        await logVehicleUpdate(oldVehicle, { ...oldVehicle, ...payload }, adminUser.username || 'admin');
-        
+        await logVehicleUpdate(selectedVehicle, { ...selectedVehicle, ...payload }, adminUser.username || 'admin');
         const { error } = await supabase.from('vehicles').update(payload).eq('id', selectedVehicle.id);
         if (error) throw error;
       } else {
-        // Log vehicle creation
         const { data, error } = await supabase.from('vehicles').insert(payload).select().single();
         if (error) throw error;
-        
-        await logVehicleChange(
-          'create',
-          data.id,
-          data.name,
-          adminUser.username || 'admin'
-        );
+        await logVehicleChange('create', data.id, data.name, adminUser.username || 'admin');
       }
-      
-      showToast(isEdit ? 'Vehicle updated!' : 'Vehicle added!');
-      closeModal(); 
+      showToast('Vehicle saved successfully');
+      setModalType('');
       fetchAll();
-    } catch (error) {
-      showToast('Error: ' + error.message, 'err');
+    } catch (err) { showToast(err.message, 'err'); }
+  };
+
+  const handleDeleteVehicle = async (id) => {
+    if (window.confirm('Delete this vehicle?')) {
+      const { error } = await supabase.from('vehicles').delete().eq('id', id);
+      if (error) showToast(error.message, 'err');
+      else { showToast('Vehicle removed'); fetchAll(); }
     }
   };
 
-  const deleteVehicle = async (id) => {
-    if (!window.confirm('Delete this vehicle?')) return;
-    try {
-      const vehicle = vehicles.find(v => v.id === id);
-      
-      // Log vehicle deletion
-      if (vehicle) {
-        await logVehicleChange(
-          'delete',
-          id,
-          vehicle.name,
-          adminUser.username || 'admin'
-        );
-      }
-      
-      const { error } = await supabase.from('vehicles').delete().eq('id', id);
-      if (error) throw error;
-      
-      showToast('Vehicle deleted.'); 
-      fetchAll();
-    } catch (error) {
-      showToast('Error: ' + error.message, 'err');
-    }
-  };
-  // ── USER CRUD ─────────────────────────────────────────────
-  const openAddUser = () => {
-    setUForm({ username:'', email:'', password:'', is_staff:false, profile:{ employee_id:'', department:'', phone:'' } });
-    setModalType('addUser');
-  };
+  // ── User CRUD ─────────────────────────────────────────────
   const openEditUser = (u) => {
+    setSelectedUser(u);
     setUForm({
       username: u.username,
-      email:    u.email,
-      password: '',
-      is_staff: u.is_staff || false,
-      profile: {
-        employee_id: u.profile?.employee_id || '',
-        department:  u.profile?.department  || '',
-        phone:       u.profile?.phone       || '',
-      },
+      is_staff: u.is_staff,
+      profile: u.profile
     });
-    setSelectedUser(u); 
     setModalType('editUser');
   };
+
   const saveUser = async () => {
-    if (!uForm.email) { showToast('Email is required', 'err'); return; }
-    const isEdit = modalType === 'editUser';
-
     try {
-      if (isEdit) {
-        // Update profile row
-        const { error } = await supabase.from('employee_profiles').update({
-          employee_id: uForm.profile.employee_id,
-          department:  uForm.profile.department,
-          phone:       uForm.profile.phone,
-          role:        uForm.is_staff ? 'admin' : 'user',
-        }).eq('id', selectedUser.id);
-        if (error) throw error;
-        showToast('User updated!');
-
-      } else {
-        // Create auth user via Admin REST (requires service role key in env)
-        const res = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/admin/users`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type':  'application/json',
-              'apikey':        import.meta.env.VITE_SUPABASE_SERVICE_KEY,
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_SERVICE_KEY}`,
-            },
-            body: JSON.stringify({
-              email:         uForm.email,
-              password:      uForm.password,
-              email_confirm: true,
-            }),
-          }
-        );
-        const newUser = await res.json();
-        if (!res.ok) { showToast('Error: ' + (newUser.message || 'Failed to create user'), 'err'); return; }
-
-        // Update the auto-created profile row
-        await supabase.from('employee_profiles').update({
-          employee_id: uForm.profile.employee_id,
-          department:  uForm.profile.department,
-          phone:       uForm.profile.phone,
-          role:        uForm.is_staff ? 'admin' : 'user',
-        }).eq('user_id', newUser.id);
-
-        showToast('User added!');
-      }
-      closeModal(); 
+      const { error } = await supabase.from('employee_profiles').update({
+        employee_id: uForm.profile.employee_id,
+        department: uForm.profile.department,
+        phone: uForm.profile.phone,
+        role: uForm.is_staff ? 'admin' : 'user'
+      }).eq('id', selectedUser.id);
+      
+      if (error) throw error;
+      showToast('User updated');
+      setModalType('');
       fetchAll();
-    } catch (error) {
-      showToast('Error: ' + error.message, 'err');
-    }
+    } catch (err) { showToast(err.message, 'err'); }
   };
 
-  const deleteUser = async (id) => {
-    if (!window.confirm('Delete this user?')) return;
-    // id here is the employee_profiles.id (not user_id)
-    const { error } = await supabase.from('employee_profiles').delete().eq('id', id);
-    if (error) { showToast('Error: ' + error.message, 'err'); return; }
-    showToast('User deleted.'); fetchAll();
-  };
-  // ── BOOKING ACTIONS ───────────────────────────────────────
-  const bookingAction = async (id, newStatus, notes='') => {
-    const updates = { status: newStatus };
-    if (notes) updates.admin_notes = notes;
-
-    const booking = bookings.find(b => b.id === id);
-
+  // ── Bookings ──────────────────────────────────────────────
+  const bookingAction = async (id, status) => {
+    const booking = bookings.find(x => x.id === id);
+    const updates = { status };
+    
     try {
-      if (newStatus === 'Returned') {
+      if (status === 'Returned') {
         updates.actual_return = new Date().toISOString();
-        if (booking?.vehicle_id) await supabase.from('vehicles').update({ is_available: true }).eq('id', booking.vehicle_id);
+        await supabase.from('vehicles').update({ is_available: true }).eq('id', booking.vehicle_id);
       }
-      if (newStatus === 'Ongoing') {
-        if (booking?.vehicle_id) await supabase.from('vehicles').update({ is_available: false }).eq('id', booking.vehicle_id);
-      }
-      if (newStatus === 'Approved' && booking) {
-        const { data: conflicts } = await supabase
-          .from('vehicle_bookings')
-          .select('id')
-          .eq('vehicle_id', booking.vehicle_id)
-          .in('status', ['Approved','Ongoing'])
-          .lt('start_datetime', booking.end_datetime)
-          .gt('end_datetime', booking.start_datetime)
-          .neq('id', id);
-        if (conflicts?.length > 0) { showToast('Vehicle already booked for that time slot.', 'err'); return; }
+      if (status === 'Ongoing') {
+        await supabase.from('vehicles').update({ is_available: false }).eq('id', booking.vehicle_id);
       }
 
       const { error } = await supabase.from('vehicle_bookings').update(updates).eq('id', id);
       if (error) throw error;
-      
-      showToast(`Booking marked as ${newStatus}!`); 
+      showToast(`Booking ${status}`);
       fetchAll();
-    } catch (error) {
-      showToast('Error: ' + error.message, 'err');
-    }
+    } catch (err) { showToast(err.message, 'err'); }
   };
 
-  // ── Loading screen (unchanged) ────────────────────────────
-  if (loading) {
-    return (
-      <div className="admin-loading">
-        <div className="spinner">Loading…</div>
-      </div>
-    );
-  }
+  // ── Logout ───────────────────────────────────────────────
+  const logout = async () => {
+    await supabase.auth.signOut();
+    localStorage.clear();
+    navigate('/admin-login');
+  };
 
-  // ─────────────────────────────────────────────────────────
-  // JSX — identical to original, zero style changes
-  // ─────────────────────────────────────────────────────────
+  if (loading) return <div className="admin-loading"><div className="spinner">Loading System...</div></div>;
+
   return (
     <div className="admin-root">
       <aside className="admin-sidebar">
         <div className="admin-logo">Fleet<span>Dispatch</span></div>
         {NAV.map(n => (
-          <div
-            key={n.key}
-            className={`admin-nav ${tab===n.key?'active':''} ${n.key==='users'?'admin-nav-users':''}`}
-            onClick={()=>setTab(n.key)}
-          >
+          <div key={n.key} className={`admin-nav ${tab === n.key ? 'active' : ''}`} onClick={() => setTab(n.key)}>
             <span className="admin-icon">{n.icon}</span>
             <span>{n.label}</span>
-            {n.key==='bookings' && stats.pendingBookings > 0 &&
-              <span className="admin-badge-notif">{stats.pendingBookings}</span>}
+            {n.key === 'bookings' && stats.pendingBookings > 0 && <span className="admin-badge-notif">{stats.pendingBookings}</span>}
           </div>
         ))}
         <div className="admin-footer">FleetDispatch v2.0</div>
@@ -444,11 +288,11 @@ export default function AdminDashboard() {
 
       <main className="admin-main">
         <div className="admin-topbar">
-          <h1>{NAV.find(n=>n.key===tab)?.label}</h1>
+          <h1>{NAV.find(n => n.key === tab)?.label}</h1>
           <div className="admin-user-menu">
-            <button className="admin-user-btn" onClick={()=>setShowUserMenu(!showUserMenu)}>
-              <span className="admin-avatar">{(adminUser.username||'A')[0].toUpperCase()}</span>
-              <span>{adminUser.username||'Admin'}</span>
+            <button className="admin-user-btn" onClick={() => setShowUserMenu(!showUserMenu)}>
+              <span className="admin-avatar">{(adminUser.username || 'A')[0].toUpperCase()}</span>
+              <span>{adminUser.username || 'Admin'}</span>
             </button>
             {showUserMenu && (
               <div className="admin-dropdown">
@@ -458,78 +302,79 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {toast.msg && (
-          <div className={`admin-toast ${toast.type==='err'?'error':'success'}`}>{toast.msg}</div>
-        )}        {/* PAGE CONTENT */}
-        {tab==='overview' && <OverviewPage stats={stats} />}
+        {toast.msg && <div className={`admin-toast ${toast.type === 'err' ? 'error' : 'success'}`}>{toast.msg}</div>}
+
+        {tab === 'overview' && <OverviewPage stats={stats} />}
         
-        {tab==='vehicles' && (
-          <VehiclesPage
-            vehicles={vehicles}
-            sortedVehicles={sortedVehicles}
+        {tab === 'vehicles' && (
+          <VehiclesPage 
+            vehicles={vehicles} 
+            sortedVehicles={sortedVehicles} 
             vehicleSort={vehicleSort}
             onCycleSort={cycleVehicleSort}
-            onAdd={openAddVehicle}
-            onEdit={openEditVehicle}
-            onDelete={deleteVehicle}
-            onViewDetails={(v) => { setSelectedVehicle(v); setModalType('vehicleDetails'); }}
+            onAdd={openAddVehicle} 
+            onEdit={openEditVehicle} 
+            onDelete={handleDeleteVehicle} 
+            onViewDetails={(v) => { setSelectedVehicle(v); setModalType('vehicleDetails'); }} 
           />
         )}
-        
-        {tab==='users' && (
-          <UsersPage
-            users={users}
-            onAdd={openAddUser}
-            onEdit={openEditUser}
-            onDelete={deleteUser}
+
+        {tab === 'users' && (
+          <UsersPage 
+            users={users} 
+            onAdd={() => setModalType('addUser')} 
+            onEdit={openEditUser} 
+            onDelete={(id) => { if(window.confirm('Delete user?')) supabase.from('employee_profiles').delete().eq('id', id).then(fetchAll); }} 
           />
         )}
-        
-        {tab==='bookings' && (
-          <BookingsPage
-            bookings={bookings}
-            onApprove={(id) => bookingAction(id, 'Approved')}
-            onReject={(id) => bookingAction(id, 'Rejected')}
-            onMarkOngoing={(id) => bookingAction(id, 'Ongoing')}
-            onMarkReturned={(id) => bookingAction(id, 'Returned')}
+
+        {tab === 'bookings' && (
+          <BookingsPage 
+            bookings={bookings} 
+            onApprove={(id) => bookingAction(id, 'Approved')} 
+            onReject={(id) => bookingAction(id, 'Rejected')} 
+            onMarkOngoing={(id) => bookingAction(id, 'Ongoing')} 
+            onMarkReturned={(id) => bookingAction(id, 'Returned')} 
           />
         )}
+
+        {tab === 'fleets' && <FleetsPage fleets={fleets} />}
         
-        {tab==='fleets' && <FleetsPage fleets={fleets} />}
-        
-        {tab==='logs' && (
+        {tab === 'logs' && (
           <VehicleLogsPage 
             logs={vehicleLogs} 
-            loading={logsLoading}
+            loading={logsLoading} 
+            onRefresh={() => fetchVehicleChangeLogs().then(setVehicleLogs)} 
           />
         )}
-      </main>      {/* MODALS */}
+      </main>
+
+      {/* Modals Section */}
       {modalType === 'vehicleDetails' && (
-        <VehicleDetailsModal
-          vehicle={selectedVehicle}
-          onEdit={() => setModalType('editVehicle')}
-          onDelete={deleteVehicle}
-          onClose={closeModal}
+        <VehicleDetailsModal 
+          vehicle={selectedVehicle} 
+          onEdit={() => setModalType('editVehicle')} 
+          onClose={() => setModalType('')} 
         />
       )}
 
       {(modalType === 'addVehicle' || modalType === 'editVehicle') && (
-        <VehicleFormModal
-          mode={modalType === 'addVehicle' ? 'add' : 'edit'}
-          data={vForm}
-          onChange={setVForm}
-          onSave={saveVehicle}
-          onClose={closeModal}
+        <VehicleFormModal 
+          mode={modalType === 'addVehicle' ? 'add' : 'edit'} 
+          data={vForm} 
+          onChange={setVForm} 
+          onSave={saveVehicle} 
+          onClose={() => setModalType('')} 
         />
       )}
 
       {(modalType === 'addUser' || modalType === 'editUser') && (
-        <UserFormModal
-          mode={modalType === 'addUser' ? 'add' : 'edit'}
-          data={uForm}
-          onChange={setUForm}
-          onSave={saveUser}
-          onClose={closeModal}
+        <UserFormModal 
+          mode={modalType === 'addUser' ? 'add' : 'edit'} 
+          data={uForm} 
+          onChange={setUForm} 
+          onSave={saveUser} 
+          onClose={() => setModalType('')} 
         />
       )}
     </div>
