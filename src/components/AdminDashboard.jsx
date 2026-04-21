@@ -3,15 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import '../styles/AdminDashboard.v2.css';
 import { supabase } from '../supabaseClient';
 
-// ─── helper badges (unchanged) ──────────────────────────────
-function condBadge(c) {
-  const map = { Good:'b-good', Fair:'b-fair', 'Under Repair':'b-repair', 'Out of Service':'b-out' };
-  return map[c] || 'b-out';
-}
-function bookBadge(s) {
-  const map = { Pending:'b-pending', Approved:'b-approved', Rejected:'b-rejected', Ongoing:'b-ongoing', Returned:'b-returned' };
-  return map[s] || '';
-}
+// Page Components
+import OverviewPage from './pages/OverviewPage';
+import VehiclesPage from './pages/VehiclesPage';
+import UsersPage from './pages/UsersPage';
+import BookingsPage from './pages/BookingsPage';
+import FleetsPage from './pages/FleetsPage';
+import VehicleLogsPage from './pages/VehicleLogsPage';
+
+// Modal Components
+import VehicleDetailsModal from './modals/VehicleDetailsModal';
+import VehicleFormModal from './modals/VehicleFormModal';
+import UserFormModal from './modals/UserFormModal';
+
+// Utilities
+import { logVehicleChange, logVehicleUpdate, fetchVehicleChangeLogs } from '../utils/vehicleLogger';
 
 const NAV = [
   { key:'overview',  icon:'📊', label:'Overview'  },
@@ -19,6 +25,7 @@ const NAV = [
   { key:'users',     icon:'👥', label:'Users'     },
   { key:'bookings',  icon:'📅', label:'Bookings'  },
   { key:'fleets',    icon:'🗂️', label:'Fleets'    },
+  { key:'logs',      icon:'📋', label:'Logs'      },
 ];
 
 export default function AdminDashboard() {
@@ -35,12 +42,14 @@ export default function AdminDashboard() {
   const [users, setUsers]         = useState([]);
   const [fleets, setFleets]       = useState([]);
   const [bookings, setBookings]   = useState([]);
+  const [vehicleLogs, setVehicleLogs] = useState([]);
+  const [logsLoading, setLogsLoading] = useState(false);
 
-  const [modal, setModal] = useState('');
-  const [sel, setSel]     = useState(null);
+  const [modalType, setModalType] = useState('');
+  const [selectedVehicle, setSelectedVehicle]     = useState(null);
+  const [selectedUser, setSelectedUser]     = useState(null);
 
   const [vForm, setVForm] = useState({ name:'', plate_number:'', model:'', year:'', condition:'Good', fleet_id:'' });
-  // uForm mirrors old shape so modal JSX stays identical
   const [uForm, setUForm] = useState({
     username:'', email:'', password:'', is_staff:false,
     profile:{ employee_id:'', department:'', phone:'' }
@@ -184,7 +193,24 @@ export default function AdminDashboard() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  const closeModal = () => { setModal(''); setSel(null); };
+  // ── Fetch vehicle logs when tab changes to logs ────────────
+  useEffect(() => {
+    if (tab === 'logs') {
+      const loadLogs = async () => {
+        setLogsLoading(true);
+        const logs = await fetchVehicleChangeLogs();
+        setVehicleLogs(logs);
+        setLogsLoading(false);
+      };
+      loadLogs();
+    }
+  }, [tab]);
+
+  const closeModal = () => { 
+    setModalType(''); 
+    setSelectedVehicle(null); 
+    setSelectedUser(null);
+  };
 
   const logout = async () => {
     await supabase.auth.signOut();
@@ -193,19 +219,18 @@ export default function AdminDashboard() {
     localStorage.removeItem('adminUser');
     navigate('/admin-login');
   };
-
   // ── VEHICLE CRUD ──────────────────────────────────────────
   const openAddVehicle = () => {
     setVForm({ name:'', plate_number:'', model:'', year:'', condition:'Good', fleet_id:'' });
-    setModal('addVehicle');
+    setModalType('addVehicle');
   };
   const openEditVehicle = (v) => {
     setVForm({ name:v.name, plate_number:v.plate_number, model:v.model||'', year:v.year||'', condition:v.condition||'Good', fleet_id:v.fleet_id||'' });
-    setSel(v); setModal('editVehicle');
+    setSelectedVehicle(v); 
+    setModalType('editVehicle');
   };
-
   const saveVehicle = async () => {
-    const isEdit = modal === 'editVehicle';
+    const isEdit = modalType === 'editVehicle';
     const payload = {
       name:         vForm.name,
       plate_number: vForm.plate_number,
@@ -214,25 +239,64 @@ export default function AdminDashboard() {
       condition:    vForm.condition,
       fleet_id:     vForm.fleet_id || null,
     };
-    const { error } = isEdit
-      ? await supabase.from('vehicles').update(payload).eq('id', sel.id)
-      : await supabase.from('vehicles').insert(payload);
-    if (error) { showToast('Error: ' + error.message, 'err'); return; }
-    showToast(isEdit ? 'Vehicle updated!' : 'Vehicle added!');
-    closeModal(); fetchAll();
+    
+    try {
+      if (isEdit) {
+        // Log changes before updating
+        const oldVehicle = selectedVehicle;
+        await logVehicleUpdate(oldVehicle, { ...oldVehicle, ...payload }, adminUser.username || 'admin');
+        
+        const { error } = await supabase.from('vehicles').update(payload).eq('id', selectedVehicle.id);
+        if (error) throw error;
+      } else {
+        // Log vehicle creation
+        const { data, error } = await supabase.from('vehicles').insert(payload).select().single();
+        if (error) throw error;
+        
+        await logVehicleChange(
+          'create',
+          data.id,
+          data.name,
+          adminUser.username || 'admin'
+        );
+      }
+      
+      showToast(isEdit ? 'Vehicle updated!' : 'Vehicle added!');
+      closeModal(); 
+      fetchAll();
+    } catch (error) {
+      showToast('Error: ' + error.message, 'err');
+    }
   };
 
   const deleteVehicle = async (id) => {
     if (!window.confirm('Delete this vehicle?')) return;
-    const { error } = await supabase.from('vehicles').delete().eq('id', id);
-    if (error) { showToast('Error: ' + error.message, 'err'); return; }
-    showToast('Vehicle deleted.'); fetchAll();
+    try {
+      const vehicle = vehicles.find(v => v.id === id);
+      
+      // Log vehicle deletion
+      if (vehicle) {
+        await logVehicleChange(
+          'delete',
+          id,
+          vehicle.name,
+          adminUser.username || 'admin'
+        );
+      }
+      
+      const { error } = await supabase.from('vehicles').delete().eq('id', id);
+      if (error) throw error;
+      
+      showToast('Vehicle deleted.'); 
+      fetchAll();
+    } catch (error) {
+      showToast('Error: ' + error.message, 'err');
+    }
   };
-
   // ── USER CRUD ─────────────────────────────────────────────
   const openAddUser = () => {
     setUForm({ username:'', email:'', password:'', is_staff:false, profile:{ employee_id:'', department:'', phone:'' } });
-    setModal('addUser');
+    setModalType('addUser');
   };
   const openEditUser = (u) => {
     setUForm({
@@ -246,56 +310,61 @@ export default function AdminDashboard() {
         phone:       u.profile?.phone       || '',
       },
     });
-    setSel(u); setModal('editUser');
+    setSelectedUser(u); 
+    setModalType('editUser');
   };
-
   const saveUser = async () => {
     if (!uForm.email) { showToast('Email is required', 'err'); return; }
-    const isEdit = modal === 'editUser';
+    const isEdit = modalType === 'editUser';
 
-    if (isEdit) {
-      // Update profile row
-      const { error } = await supabase.from('employee_profiles').update({
-        employee_id: uForm.profile.employee_id,
-        department:  uForm.profile.department,
-        phone:       uForm.profile.phone,
-        role:        uForm.is_staff ? 'admin' : 'user',
-      }).eq('id', sel.id);
-      if (error) { showToast('Error: ' + error.message, 'err'); return; }
-      showToast('User updated!');
+    try {
+      if (isEdit) {
+        // Update profile row
+        const { error } = await supabase.from('employee_profiles').update({
+          employee_id: uForm.profile.employee_id,
+          department:  uForm.profile.department,
+          phone:       uForm.profile.phone,
+          role:        uForm.is_staff ? 'admin' : 'user',
+        }).eq('id', selectedUser.id);
+        if (error) throw error;
+        showToast('User updated!');
 
-    } else {
-      // Create auth user via Admin REST (requires service role key in env)
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/admin/users`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type':  'application/json',
-            'apikey':        import.meta.env.VITE_SUPABASE_SERVICE_KEY,
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_SERVICE_KEY}`,
-          },
-          body: JSON.stringify({
-            email:         uForm.email,
-            password:      uForm.password,
-            email_confirm: true,
-          }),
-        }
-      );
-      const newUser = await res.json();
-      if (!res.ok) { showToast('Error: ' + (newUser.message || 'Failed to create user'), 'err'); return; }
+      } else {
+        // Create auth user via Admin REST (requires service role key in env)
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/admin/users`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type':  'application/json',
+              'apikey':        import.meta.env.VITE_SUPABASE_SERVICE_KEY,
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_SERVICE_KEY}`,
+            },
+            body: JSON.stringify({
+              email:         uForm.email,
+              password:      uForm.password,
+              email_confirm: true,
+            }),
+          }
+        );
+        const newUser = await res.json();
+        if (!res.ok) { showToast('Error: ' + (newUser.message || 'Failed to create user'), 'err'); return; }
 
-      // Update the auto-created profile row
-      await supabase.from('employee_profiles').update({
-        employee_id: uForm.profile.employee_id,
-        department:  uForm.profile.department,
-        phone:       uForm.profile.phone,
-        role:        uForm.is_staff ? 'admin' : 'user',
-      }).eq('user_id', newUser.id);
+        // Update the auto-created profile row
+        await supabase.from('employee_profiles').update({
+          employee_id: uForm.profile.employee_id,
+          department:  uForm.profile.department,
+          phone:       uForm.profile.phone,
+          role:        uForm.is_staff ? 'admin' : 'user',
+        }).eq('user_id', newUser.id);
 
-      showToast('User added!');
+        showToast('User added!');
+      }
+      closeModal(); 
+      fetchAll();
+    } catch (error) {
+      showToast('Error: ' + error.message, 'err');
     }
-    closeModal(); fetchAll();
   };
 
   const deleteUser = async (id) => {
@@ -305,7 +374,6 @@ export default function AdminDashboard() {
     if (error) { showToast('Error: ' + error.message, 'err'); return; }
     showToast('User deleted.'); fetchAll();
   };
-
   // ── BOOKING ACTIONS ───────────────────────────────────────
   const bookingAction = async (id, newStatus, notes='') => {
     const updates = { status: newStatus };
@@ -313,28 +381,34 @@ export default function AdminDashboard() {
 
     const booking = bookings.find(b => b.id === id);
 
-    if (newStatus === 'Returned') {
-      updates.actual_return = new Date().toISOString();
-      if (booking?.vehicle_id) await supabase.from('vehicles').update({ is_available: true }).eq('id', booking.vehicle_id);
-    }
-    if (newStatus === 'Ongoing') {
-      if (booking?.vehicle_id) await supabase.from('vehicles').update({ is_available: false }).eq('id', booking.vehicle_id);
-    }
-    if (newStatus === 'Approved' && booking) {
-      const { data: conflicts } = await supabase
-        .from('vehicle_bookings')
-        .select('id')
-        .eq('vehicle_id', booking.vehicle_id)
-        .in('status', ['Approved','Ongoing'])
-        .lt('start_datetime', booking.end_datetime)
-        .gt('end_datetime', booking.start_datetime)
-        .neq('id', id);
-      if (conflicts?.length > 0) { showToast('Vehicle already booked for that time slot.', 'err'); return; }
-    }
+    try {
+      if (newStatus === 'Returned') {
+        updates.actual_return = new Date().toISOString();
+        if (booking?.vehicle_id) await supabase.from('vehicles').update({ is_available: true }).eq('id', booking.vehicle_id);
+      }
+      if (newStatus === 'Ongoing') {
+        if (booking?.vehicle_id) await supabase.from('vehicles').update({ is_available: false }).eq('id', booking.vehicle_id);
+      }
+      if (newStatus === 'Approved' && booking) {
+        const { data: conflicts } = await supabase
+          .from('vehicle_bookings')
+          .select('id')
+          .eq('vehicle_id', booking.vehicle_id)
+          .in('status', ['Approved','Ongoing'])
+          .lt('start_datetime', booking.end_datetime)
+          .gt('end_datetime', booking.start_datetime)
+          .neq('id', id);
+        if (conflicts?.length > 0) { showToast('Vehicle already booked for that time slot.', 'err'); return; }
+      }
 
-    const { error } = await supabase.from('vehicle_bookings').update(updates).eq('id', id);
-    if (error) { showToast('Error: ' + error.message, 'err'); return; }
-    showToast(`Booking marked as ${newStatus}!`); fetchAll();
+      const { error } = await supabase.from('vehicle_bookings').update(updates).eq('id', id);
+      if (error) throw error;
+      
+      showToast(`Booking marked as ${newStatus}!`); 
+      fetchAll();
+    } catch (error) {
+      showToast('Error: ' + error.message, 'err');
+    }
   };
 
   // ── Loading screen (unchanged) ────────────────────────────
@@ -386,263 +460,77 @@ export default function AdminDashboard() {
 
         {toast.msg && (
           <div className={`admin-toast ${toast.type==='err'?'error':'success'}`}>{toast.msg}</div>
-        )}
-
-        {/* OVERVIEW */}
-        {tab==='overview' && (
-          <div className="admin-stats-grid">
-            {[
-              {icon:'🚗', label:'Vehicles', value:stats.totalVehicles||0},
-              {icon:'👥', label:'Users',    value:stats.totalUsers||0},
-              {icon:'🗂️', label:'Fleets',   value:stats.totalFleets||0},
-              {icon:'📅', label:'Pending',  value:stats.pendingBookings||0},
-            ].map(s=>(
-              <div className="admin-stat-card" key={s.label}>
-                <div className="admin-stat-icon">{s.icon}</div>
-                <div className="admin-stat-info"><p>{s.label}</p><h2>{s.value}</h2></div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* VEHICLES */}
+        )}        {/* PAGE CONTENT */}
+        {tab==='overview' && <OverviewPage stats={stats} />}
+        
         {tab==='vehicles' && (
-          <div className="admin-card">
-            <div className="admin-card-header">
-              <h3>Vehicles <span className="admin-count">{vehicles.length}</span></h3>
-              <div className="admin-actions">
-                <button className="admin-btn admin-btn-outline" type="button" onClick={cycleVehicleSort} title="Cycle sort order">⇅ Sort</button>
-                <button className="admin-btn admin-btn-primary" onClick={openAddVehicle}>+ Add Vehicle</button>
-              </div>
-            </div>
-            <div className="admin-vehicle-grid">
-              {vehicles.length===0 && <div className="admin-empty">No vehicles yet.</div>}
-              {sortedVehicles.map(v => (
-                <button key={v.id} type="button" className="admin-vehicle-card" onClick={()=>{setSel(v);setModal('vehicleDetails');}}>
-                  <div className="admin-vehicle-media"><div className="admin-vehicle-img" aria-hidden="true"/></div>
-                  <div className="admin-vehicle-body">
-                    <div className="admin-vehicle-title-row">
-                      <div className="admin-vehicle-title">
-                        <span className="admin-bold">{v.name}</span>
-                        <span className="admin-muted-sm">#{v.id} • {v.plate_number}</span>
-                      </div>
-                      <span className={`admin-badge ${condBadge(v.condition)}`}>{v.condition}</span>
-                    </div>
-                    <div className="admin-vehicle-meta">
-                      <span className="admin-muted">{v.model} {v.year}</span>
-                      <span className={`admin-badge ${v.is_available?'b-approved':'b-rejected'}`}>{v.is_available?'Available':'Unavailable'}</span>
-                    </div>
-                    <div className="admin-vehicle-actions" onClick={e=>e.stopPropagation()}>
-                      <button className="admin-btn admin-btn-primary" type="button" onClick={()=>openEditVehicle(v)}>Edit</button>
-                      <button className="admin-btn admin-btn-danger"  type="button" onClick={()=>deleteVehicle(v.id)}>Delete</button>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
+          <VehiclesPage
+            vehicles={vehicles}
+            sortedVehicles={sortedVehicles}
+            vehicleSort={vehicleSort}
+            onCycleSort={cycleVehicleSort}
+            onAdd={openAddVehicle}
+            onEdit={openEditVehicle}
+            onDelete={deleteVehicle}
+            onViewDetails={(v) => { setSelectedVehicle(v); setModalType('vehicleDetails'); }}
+          />
         )}
-
-        {/* USERS */}
+        
         {tab==='users' && (
-          <div className="admin-card admin-card-compact">
-            <div className="admin-card-header">
-              <h3>Users <span className="admin-count">{users.length}</span></h3>
-              <button className="admin-btn admin-btn-primary" onClick={openAddUser}>+ Add User</button>
-            </div>
-            <div className="admin-table-scroll">
-              <table className="admin-table">
-                <thead>
-                  <tr><th>ID</th><th>Username</th><th>Email</th><th>Department</th><th>Role</th><th>Actions</th></tr>
-                </thead>
-                <tbody>
-                  {users.length===0 && <tr><td colSpan={6} className="admin-empty">No users yet.</td></tr>}
-                  {users.map(u=>(
-                    <tr key={u.id}>
-                      <td><code className="admin-code">#{u.id}</code></td>
-                      <td className="admin-bold">{u.username}</td>
-                      <td className="admin-muted">{u.email||'—'}</td>
-                      <td className="admin-muted">{u.profile?.department||'—'}</td>
-                      <td><span className={`admin-badge ${u.is_staff?'b-approved':'b-ongoing'}`}>{u.is_staff?'Admin':'User'}</span></td>
-                      <td className="admin-actions">
-                        <button className="admin-btn admin-btn-primary" onClick={()=>openEditUser(u)}>Edit</button>
-                        <button className="admin-btn admin-btn-danger"  onClick={()=>deleteUser(u.id)}>Delete</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <UsersPage
+            users={users}
+            onAdd={openAddUser}
+            onEdit={openEditUser}
+            onDelete={deleteUser}
+          />
         )}
-
-        {/* BOOKINGS */}
+        
         {tab==='bookings' && (
-          <div className="admin-card">
-            <div className="admin-card-header">
-              <h3>Bookings <span className="admin-count">{bookings.filter(b=>b.status==='Pending').length} pending</span></h3>
-            </div>
-            <table className="admin-table">
-              <thead>
-                <tr><th>ID</th><th>Employee</th><th>Vehicle</th><th>Start</th><th>End</th><th>Status</th><th>Actions</th></tr>
-              </thead>
-              <tbody>
-                {bookings.length===0 && <tr><td colSpan={7} className="admin-empty">No bookings yet.</td></tr>}
-                {bookings.map(b=>(
-                  <tr key={b.id}>
-                    <td className="admin-muted">#{b.id}</td>
-                    <td>
-                      <div className="admin-bold">{b.user?.username}</div>
-                      <div className="admin-muted-sm">{b.user?.profile?.employee_id||'No EMP ID'}</div>
-                    </td>
-                    <td>
-                      <div className="admin-bold">{b.vehicle?.name}</div>
-                      <div className="admin-muted-sm">{b.vehicle?.plate_number}</div>
-                    </td>
-                    <td className="admin-muted-sm">{new Date(b.start_datetime).toLocaleString()}</td>
-                    <td className="admin-muted-sm">{new Date(b.end_datetime).toLocaleString()}</td>
-                    <td><span className={`admin-badge ${bookBadge(b.status)}`}>{b.status}</span></td>
-                    <td className="admin-actions">
-                      {b.status==='Pending'  && <><button className="admin-btn admin-btn-success" onClick={()=>bookingAction(b.id,'Approved')}>Approve</button><button className="admin-btn admin-btn-danger" onClick={()=>bookingAction(b.id,'Rejected')}>Reject</button></>}
-                      {b.status==='Approved' && <button className="admin-btn admin-btn-warning" onClick={()=>bookingAction(b.id,'Ongoing')}>Mark Ongoing</button>}
-                      {b.status==='Ongoing'  && <button className="admin-btn admin-btn-outline" onClick={()=>bookingAction(b.id,'Returned')}>Mark Returned</button>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <BookingsPage
+            bookings={bookings}
+            onApprove={(id) => bookingAction(id, 'Approved')}
+            onReject={(id) => bookingAction(id, 'Rejected')}
+            onMarkOngoing={(id) => bookingAction(id, 'Ongoing')}
+            onMarkReturned={(id) => bookingAction(id, 'Returned')}
+          />
         )}
-
-        {/* FLEETS */}
-        {tab==='fleets' && (
-          <div className="admin-card">
-            <div className="admin-card-header"><h3>Fleets</h3></div>
-            <table className="admin-table">
-              <thead><tr><th>ID</th><th>Name</th><th>Vehicles</th></tr></thead>
-              <tbody>
-                {fleets.length===0 && <tr><td colSpan={3} className="admin-empty">No fleets.</td></tr>}
-                {fleets.map(f=>(
-                  <tr key={f.id}>
-                    <td className="admin-muted">#{f.id}</td>
-                    <td className="admin-bold">{f.name}</td>
-                    <td><span className="admin-badge b-ongoing">{f.vehicles?.length||0}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        
+        {tab==='fleets' && <FleetsPage fleets={fleets} />}
+        
+        {tab==='logs' && (
+          <VehicleLogsPage 
+            logs={vehicleLogs} 
+            loading={logsLoading}
+          />
         )}
-      </main>
-
-      {/* VEHICLE DETAILS MODAL */}
-      {modal==='vehicleDetails' && sel && (
-        <div className="admin-overlay" onClick={closeModal}>
-          <div className="admin-modal" onClick={e=>e.stopPropagation()}>
-            <div className="admin-modal-header">
-              <h3>Vehicle Details</h3>
-              <button className="admin-btn admin-btn-outline admin-close" onClick={closeModal}>✕</button>
-            </div>
-            <div className="admin-modal-body">
-              <div className="admin-vehicle-detail">
-                <div className="admin-vehicle-detail-media" aria-hidden="true"/>
-                <div className="admin-vehicle-detail-info">
-                  <div className="admin-vehicle-detail-title">
-                    <div>
-                      <div className="admin-bold" style={{fontSize:'16px'}}>{sel.name}</div>
-                      <div className="admin-muted-sm">#{sel.id} • {sel.plate_number}</div>
-                    </div>
-                    <span className={`admin-badge ${condBadge(sel.condition)}`}>{sel.condition}</span>
-                  </div>
-                  <div className="admin-vehicle-detail-grid">
-                    <div><div className="admin-muted-sm">Model</div><div className="admin-bold">{sel.model||'—'}</div></div>
-                    <div><div className="admin-muted-sm">Year</div><div className="admin-bold">{sel.year||'—'}</div></div>
-                    <div>
-                      <div className="admin-muted-sm">Availability</div>
-                      <span className={`admin-badge ${sel.is_available?'b-approved':'b-rejected'}`}>{sel.is_available?'Available':'Unavailable'}</span>
-                    </div>
-                  </div>
-                  <div className="admin-vehicle-detail-actions">
-                    <button className="admin-btn admin-btn-primary" type="button" onClick={()=>setModal('editVehicle')}>Edit</button>
-                    <button className="admin-btn admin-btn-danger"  type="button" onClick={()=>deleteVehicle(sel.id)}>Delete</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="admin-modal-footer">
-              <button className="admin-btn admin-btn-outline" onClick={closeModal}>Close</button>
-            </div>
-          </div>
-        </div>
+      </main>      {/* MODALS */}
+      {modalType === 'vehicleDetails' && (
+        <VehicleDetailsModal
+          vehicle={selectedVehicle}
+          onEdit={() => setModalType('editVehicle')}
+          onDelete={deleteVehicle}
+          onClose={closeModal}
+        />
       )}
 
-      {/* ADD / EDIT VEHICLE MODAL */}
-      {(modal==='addVehicle'||modal==='editVehicle') && (
-        <div className="admin-overlay" onClick={closeModal}>
-          <div className="admin-modal" onClick={e=>e.stopPropagation()}>
-            <div className="admin-modal-header">
-              <h3>{modal==='addVehicle'?'Add Vehicle':'Edit Vehicle'}</h3>
-              <button className="admin-btn admin-btn-outline admin-close" onClick={closeModal}>✕</button>
-            </div>
-            <div className="admin-modal-body">
-              <div className="admin-form-row">
-                <div className="admin-form-group"><label>Vehicle Name *</label><input value={vForm.name} onChange={e=>setVForm({...vForm,name:e.target.value})} placeholder="e.g. Toyota Hilux"/></div>
-                <div className="admin-form-group"><label>Plate Number *</label><input value={vForm.plate_number} onChange={e=>setVForm({...vForm,plate_number:e.target.value})} placeholder="e.g. ABC-1234"/></div>
-              </div>
-              <div className="admin-form-row">
-                <div className="admin-form-group"><label>Model</label><input value={vForm.model} onChange={e=>setVForm({...vForm,model:e.target.value})} placeholder="e.g. Hilux Revo"/></div>
-                <div className="admin-form-group"><label>Year</label><input type="number" value={vForm.year} onChange={e=>setVForm({...vForm,year:e.target.value})} placeholder="e.g. 2022"/></div>
-              </div>
-              <div className="admin-form-group">
-                <label>Condition</label>
-                <select value={vForm.condition} onChange={e=>setVForm({...vForm,condition:e.target.value})}>
-                  <option>Good</option><option>Fair</option><option>Under Repair</option><option>Out of Service</option>
-                </select>
-              </div>
-            </div>
-            <div className="admin-modal-footer">
-              <button className="admin-btn admin-btn-outline" onClick={closeModal}>Cancel</button>
-              <button className="admin-btn admin-btn-primary" onClick={saveVehicle}>{modal==='addVehicle'?'Add Vehicle':'Save Changes'}</button>
-            </div>
-          </div>
-        </div>
+      {(modalType === 'addVehicle' || modalType === 'editVehicle') && (
+        <VehicleFormModal
+          mode={modalType === 'addVehicle' ? 'add' : 'edit'}
+          data={vForm}
+          onChange={setVForm}
+          onSave={saveVehicle}
+          onClose={closeModal}
+        />
       )}
 
-      {/* ADD / EDIT USER MODAL */}
-      {(modal==='addUser'||modal==='editUser') && (
-        <div className="admin-overlay" onClick={closeModal}>
-          <div className="admin-modal" onClick={e=>e.stopPropagation()}>
-            <div className="admin-modal-header">
-              <h3>{modal==='addUser'?'Add User':'Edit User'}</h3>
-              <button className="admin-btn admin-btn-outline admin-close" onClick={closeModal}>✕</button>
-            </div>
-            <div className="admin-modal-body">
-              <div className="admin-form-row">
-                <div className="admin-form-group"><label>Username *</label><input value={uForm.username} onChange={e=>setUForm({...uForm,username:e.target.value})} placeholder="johndoe"/></div>
-                <div className="admin-form-group"><label>Employee ID</label><input value={uForm.profile.employee_id} onChange={e=>setUForm({...uForm,profile:{...uForm.profile,employee_id:e.target.value}})} placeholder="EMP-001"/></div>
-              </div>
-              <div className="admin-form-group"><label>Email *</label><input type="email" value={uForm.email} onChange={e=>setUForm({...uForm,email:e.target.value})} placeholder="john@company.com"/></div>
-              <div className="admin-form-group">
-                <label>{modal==='editUser'?'New Password (leave blank to keep)':'Password *'}</label>
-                <input type="password" value={uForm.password} onChange={e=>setUForm({...uForm,password:e.target.value})} placeholder="••••••••"/>
-              </div>
-              <div className="admin-form-row">
-                <div className="admin-form-group"><label>Department</label><input value={uForm.profile.department} onChange={e=>setUForm({...uForm,profile:{...uForm.profile,department:e.target.value}})} placeholder="e.g. Logistics"/></div>
-                <div className="admin-form-group"><label>Phone</label><input value={uForm.profile.phone} onChange={e=>setUForm({...uForm,profile:{...uForm.profile,phone:e.target.value}})} placeholder="09XX-XXX-XXXX"/></div>
-              </div>
-              <div className="admin-form-group">
-                <label className="admin-checkbox">
-                  <input type="checkbox" checked={uForm.is_staff} onChange={e=>setUForm({...uForm,is_staff:e.target.checked})}/>
-                  <span>Grant Admin Access</span>
-                </label>
-              </div>
-            </div>
-            <div className="admin-modal-footer">
-              <button className="admin-btn admin-btn-outline" onClick={closeModal}>Cancel</button>
-              <button className="admin-btn admin-btn-primary" onClick={saveUser}>{modal==='addUser'?'Add User':'Save Changes'}</button>
-            </div>
-          </div>
-        </div>
+      {(modalType === 'addUser' || modalType === 'editUser') && (
+        <UserFormModal
+          mode={modalType === 'addUser' ? 'add' : 'edit'}
+          data={uForm}
+          onChange={setUForm}
+          onSave={saveUser}
+          onClose={closeModal}
+        />
       )}
     </div>
   );
