@@ -1,0 +1,232 @@
+/* Background and Car Display Styles */
+
+/* Background Image Container */
+.background-image-section {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.background-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  animation: morphBackground 1s ease-in-out forwards;
+}
+
+/* Morph animation for background transitions */
+@keyframes morphBackground {
+  0% {
+    opacity: 0;
+    transform: scale(1.1);
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Car Display Behind Background */
+.car-display {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.car-behind-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  animation: carPulse 1s ease-in-out forwards;
+  opacity: 0.7;
+}
+
+@keyframes carPulse {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+}
+
+/* Login Page Specific Styles */
+.login-container.user-login {
+  background: linear-gradient(135deg, rgba(26, 95, 63, 0.8) 0%, rgba(45, 134, 89, 0.8) 50%, rgba(61, 157, 111, 0.8) 100%);
+  position: relative;
+  z-index: 10;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-container.user-login::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 600px;
+  height: 600px;
+  background: rgba(255, 223, 0, 0.05);
+  border-radius: 50%;
+  animation: float 6s ease-in-out infinite;
+  z-index: 2;
+}
+
+.login-container.user-login::after {
+  content: '';
+  position: absolute;
+  bottom: -50%;
+  left: -10%;
+  width: 400px;
+  height: 400px;
+  background: rgba(255, 223, 0, 0.03);
+  border-radius: 50%;
+  animation: float 8s ease-in-out infinite reverse;
+  z-index: 2;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(30px);
+  }
+}
+
+/* Admin Login Page Specific Styles */
+.admin-login-container.admin-login {
+  background: linear-gradient(135deg, rgba(45, 45, 45, 0.9) 0%, rgba(35, 35, 35, 0.9) 50%, rgba(25, 25, 25, 0.9) 100%);
+  position: relative;
+  z-index: 10;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-login-container.admin-login::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 600px;
+  height: 600px;
+  background: rgba(103, 196, 66, 0.05);
+  border-radius: 50%;
+  animation: float 6s ease-in-out infinite;
+  z-index: 2;
+}
+
+.admin-login-container.admin-login::after {
+  content: '';
+  position: absolute;
+  bottom: -50%;
+  left: -10%;
+  width: 400px;
+  height: 400px;
+  background: rgba(103, 196, 66, 0.03);
+  border-radius: 50%;
+  animation: float 8s ease-in-out infinite reverse;
+  z-index: 2;
+}
+
+/* Content wrapper positioning */
+.login-content,
+.admin-login-content {
+  position: relative;
+  z-index: 20;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .background-image {
+    object-position: center;
+  }
+
+  .login-content,
+  .admin-login-content {
+    max-width: 100%;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .background-image {
+    object-position: center;
+  }
+
+  .car-behind-bg {
+    opacity: 0.6;
+  }
+
+  .login-content,
+  .admin-login-content {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 600px) {
+  .background-image {
+    object-position: center;
+  }
+
+  .car-behind-bg {
+    opacity: 0.5;
+  }
+
+  .login-content,
+  .admin-login-content {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .background-image-section {
+    background-size: cover;
+  }
+
+  .car-behind-bg {
+    opacity: 0.4;
+    transform: scale(0.9);
+  }
+
+  .login-content,
+  .admin-login-content {
+    padding: 8px;
+  }
+}
+
+@media (max-height: 600px) {
+  .car-behind-bg {
+    opacity: 0.5;
+  }
+
+  .background-image {
+    object-position: center;
+  }
+}
