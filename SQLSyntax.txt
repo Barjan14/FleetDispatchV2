@@ -1,0 +1,389 @@
+-- ================================================================
+-- FLEET DISPATCH — SUPABASE SQL SCHEMA
+-- Run this entire script in Supabase SQL Editor
+-- ================================================================
+
+
+-- ─── STEP 1: CORE TABLES ────────────────────────────────────
+
+-- Employee Profiles (extends auth.users)
+create table if not exists employee_profiles (
+  id          bigserial primary key,
+  user_id     uuid references auth.users(id) on delete cascade unique not null,
+  employee_id text unique,
+  department  text default '',
+  phone       text default '',
+  role        text default 'user' check (role in ('user', 'admin')),
+  created_at  timestamptz default now()
+);
+
+-- Fleets
+create table if not exists fleets (
+  id         bigserial primary key,
+  name       text not null,
+  created_at timestamptz default now()
+);
+
+-- Vehicles
+create table if not exists vehicles (
+  id           bigserial primary key,
+  fleet_id     bigint references fleets(id) on delete set null,
+  name         text not null,
+  plate_number text unique not null,
+  model        text default '',
+  year         int,
+  fuel_type    text default 'Diesel' check (fuel_type in ('Gasoline','Diesel','Electric','Hybrid')),
+  condition    text default 'Good' check (condition in ('Good','Fair','Under Repair','Out of Service')),
+  is_available boolean default true,
+  image_url    text,
+  odometer_km  float default 0,
+  created_at   timestamptz default now()
+);
+
+-- Vehicle Bookings
+create table if not exists vehicle_bookings (
+  id             bigserial primary key,
+  vehicle_id     bigint references vehicles(id) on delete cascade not null,
+  user_id        uuid references auth.users(id) on delete cascade not null,
+  purpose        text default '',
+  destination    text default '',
+  start_datetime timestamptz not null,
+  end_datetime   timestamptz not null,
+  actual_return  timestamptz,
+  status         text default 'Pending' check (status in ('Pending','Approved','Rejected','Ongoing','Returned')),
+  admin_notes    text default '',
+  created_at     timestamptz default now()
+);
+
+
+-- ─── STEP 2: REPAIR HISTORY ─────────────────────────────────
+
+create table if not exists repair_records (
+  id            bigserial primary key,
+  vehicle_id    bigint references vehicles(id) on delete cascade not null,
+  reported_by   uuid references auth.users(id) on delete set null,
+  issue         text not null,
+  repair_done   text default '',
+  status        text default 'Pending' check (status in ('Pending','In Progress','Completed')),
+  shop_name     text default '',
+  repair_cost   numeric(10,2) default 0,
+  date_reported date not null,
+  date_resolved date,
+  created_at    timestamptz default now()
+);
+
+create table if not exists repair_parts (
+  id        bigserial primary key,
+  repair_id bigint references repair_records(id) on delete cascade not null,
+  part_name text not null,
+  quantity  int default 1,
+  unit_cost numeric(10,2) default 0
+);
+
+
+-- ─── STEP 3: SPARE PARTS ────────────────────────────────────
+
+create table if not exists suppliers (
+  id         bigserial primary key,
+  name       text not null,
+  contact    text default '',
+  address    text default '',
+  email      text default '',
+  created_at timestamptz default now()
+);
+
+create table if not exists spare_parts (
+  id            bigserial primary key,
+  name          text not null,
+  part_number   text default '',
+  supplier_id   bigint references suppliers(id) on delete set null,
+  quantity      int default 0,
+  unit_cost     numeric(10,2) default 0,
+  reorder_level int default 5,
+  created_at    timestamptz default now()
+);
+
+
+-- ─── STEP 4: FUEL USAGE ─────────────────────────────────────
+
+create table if not exists fuel_records (
+  id                bigserial primary key,
+  vehicle_id        bigint references vehicles(id) on delete cascade not null,
+  driver_id         uuid references auth.users(id) on delete set null,
+  date              date not null,
+  liters            float not null,
+  cost_per_liter    numeric(8,2) default 0,
+  total_cost        numeric(10,2) default 0,
+  odometer_km       float,
+  km_per_liter      float,
+  receipt_image_url text,
+  station_name      text default '',
+  notes             text default '',
+  created_at        timestamptz default now()
+);
+
+
+-- ─── STEP 5: DISTANCE / TRIP LOGS ───────────────────────────
+
+create table if not exists trip_logs (
+  id             bigserial primary key,
+  vehicle_id     bigint references vehicles(id) on delete cascade not null,
+  driver_id      uuid references auth.users(id) on delete set null,
+  origin         text default '',
+  destination    text default '',
+  purpose        text default '',
+  status         text default 'Scheduled' check (status in ('Scheduled','Ongoing','Completed','Cancelled')),
+  start_datetime timestamptz,
+  end_datetime   timestamptz,
+  odometer_start float,
+  odometer_end   float,
+  distance_km    float generated always as (
+                   case
+                     when odometer_end is not null and odometer_start is not null
+                     then odometer_end - odometer_start
+                     else null
+                   end
+                 ) stored,
+  created_at     timestamptz default now()
+);
+
+
+-- ─── STEP 6: DRIVER INFO ────────────────────────────────────
+
+create table if not exists driver_profiles (
+  id                  bigserial primary key,
+  user_id             uuid references auth.users(id) on delete cascade unique not null,
+  license_number      text default '',
+  license_type        text check (license_type in ('A','B','C','BE','CE')),
+  license_expiry      date,
+  date_of_birth       date,
+  contact_number      text default '',
+  emergency_contact   text default '',
+  address             text default '',
+  is_active_driver    boolean default true,
+  availability        text default 'Available' check (availability in ('Available','On Trip','On Leave','Off Duty','Suspended')),
+  assigned_fleet_id   bigint references fleets(id) on delete set null,
+  assigned_vehicle_id bigint references vehicles(id) on delete set null,
+  notes               text default '',
+  created_at          timestamptz default now()
+);
+
+create table if not exists driver_violations (
+  id          bigserial primary key,
+  driver_id   bigint references driver_profiles(id) on delete cascade not null,
+  date        date not null,
+  description text,
+  severity    text default 'Minor' check (severity in ('Minor','Major','Critical')),
+  fine_amount numeric(10,2) default 0,
+  resolved    boolean default false,
+  created_at  timestamptz default now()
+);
+
+
+-- ─── STEP 7: DISPATCH RECORDS ───────────────────────────────
+
+create table if not exists dispatch_records (
+  id                  bigserial primary key,
+  vehicle_id          bigint references vehicles(id) on delete cascade not null,
+  driver_id           uuid references auth.users(id) on delete set null,
+  requested_by        uuid references auth.users(id) on delete set null,
+  destination         text default '',
+  purpose             text default '',
+  status              text default 'Scheduled' check (status in ('Scheduled','Dispatched','Returned','Cancelled')),
+  scheduled_departure timestamptz,
+  actual_departure    timestamptz,
+  actual_return       timestamptz,
+  notes               text default '',
+  created_at          timestamptz default now()
+);
+
+
+-- ─── STEP 8: FINANCIAL DATA ─────────────────────────────────
+
+create table if not exists maintenance_costs (
+  id          bigserial primary key,
+  vehicle_id  bigint references vehicles(id) on delete cascade not null,
+  category    text check (category in ('Fuel','Repair','Parts','Insurance','Registration','Depreciation','Other')),
+  description text default '',
+  amount      numeric(12,2) default 0,
+  date        date,
+  receipt_ref text default '',
+  created_at  timestamptz default now()
+);
+
+create table if not exists vehicle_depreciation (
+  id                   bigserial primary key,
+  vehicle_id           bigint references vehicles(id) on delete cascade unique not null,
+  purchase_price       numeric(14,2) default 0,
+  purchase_date        date,
+  useful_life_years    int default 10,
+  residual_value       numeric(14,2) default 0,
+  current_value        numeric(14,2),
+  depreciation_method  text default 'Straight-line',
+  updated_at           timestamptz default now()
+);
+
+
+-- ─── STEP 9: COMPLIANCE ─────────────────────────────────────
+
+create table if not exists insurance_records (
+  id             bigserial primary key,
+  vehicle_id     bigint references vehicles(id) on delete cascade not null,
+  provider       text default '',
+  policy_number  text default '',
+  coverage_type  text default '',
+  start_date     date,
+  expiry_date    date,
+  premium_amount numeric(12,2) default 0,
+  is_active      boolean default true,
+  document_url   text,
+  created_at     timestamptz default now()
+);
+
+create table if not exists registration_records (
+  id                  bigserial primary key,
+  vehicle_id          bigint references vehicles(id) on delete cascade not null,
+  registration_number text default '',
+  registered_date     date,
+  expiry_date         date,
+  amount_paid         numeric(10,2) default 0,
+  document_url        text,
+  created_at          timestamptz default now()
+);
+
+create table if not exists safety_checks (
+  id            bigserial primary key,
+  vehicle_id    bigint references vehicles(id) on delete cascade not null,
+  checked_by    uuid references auth.users(id) on delete set null,
+  check_date    date,
+  next_due_date date,
+  result        text default 'Pending' check (result in ('Passed','Failed','Pending')),
+  notes         text default '',
+  document_url  text,
+  created_at    timestamptz default now()
+);
+
+
+-- ================================================================
+-- STEP 10: ROW LEVEL SECURITY (RLS)
+-- ================================================================
+
+alter table employee_profiles    enable row level security;
+alter table fleets               enable row level security;
+alter table vehicles             enable row level security;
+alter table vehicle_bookings     enable row level security;
+alter table repair_records       enable row level security;
+alter table repair_parts         enable row level security;
+alter table suppliers            enable row level security;
+alter table spare_parts          enable row level security;
+alter table fuel_records         enable row level security;
+alter table trip_logs            enable row level security;
+alter table driver_profiles      enable row level security;
+alter table driver_violations    enable row level security;
+alter table dispatch_records     enable row level security;
+alter table maintenance_costs    enable row level security;
+alter table vehicle_depreciation enable row level security;
+alter table insurance_records    enable row level security;
+alter table registration_records enable row level security;
+alter table safety_checks        enable row level security;
+
+
+-- Helper function: check if current user is admin
+create or replace function is_admin()
+returns boolean as $$
+  select exists (
+    select 1 from employee_profiles
+    where user_id = auth.uid() and role = 'admin'
+  );
+$$ language sql security definer;
+
+
+-- ── EMPLOYEE PROFILES ──
+create policy "Users read own profile"
+  on employee_profiles for select
+  using (user_id = auth.uid());
+
+create policy "Admins full access to profiles"
+  on employee_profiles for all
+  using (is_admin());
+
+-- ── VEHICLES ──
+create policy "Anyone authenticated can read vehicles"
+  on vehicles for select
+  using (auth.uid() is not null);
+
+create policy "Admins manage vehicles"
+  on vehicles for all
+  using (is_admin());
+
+-- ── FLEETS ──
+create policy "Anyone authenticated can read fleets"
+  on fleets for select
+  using (auth.uid() is not null);
+
+create policy "Admins manage fleets"
+  on fleets for all
+  using (is_admin());
+
+-- ── BOOKINGS ──
+create policy "Users see own bookings"
+  on vehicle_bookings for select
+  using (user_id = auth.uid());
+
+create policy "Users create own bookings"
+  on vehicle_bookings for insert
+  with check (user_id = auth.uid());
+
+create policy "Admins manage all bookings"
+  on vehicle_bookings for all
+  using (is_admin());
+
+-- ── ALL OTHER TABLES: Admins only ──
+create policy "Admins manage repairs"        on repair_records       for all using (is_admin());
+create policy "Admins manage repair parts"   on repair_parts         for all using (is_admin());
+create policy "Admins manage suppliers"      on suppliers            for all using (is_admin());
+create policy "Admins manage spare parts"    on spare_parts          for all using (is_admin());
+create policy "Admins manage fuel"           on fuel_records         for all using (is_admin());
+create policy "Admins manage trips"          on trip_logs            for all using (is_admin());
+create policy "Admins manage drivers"        on driver_profiles      for all using (is_admin());
+create policy "Admins manage violations"     on driver_violations    for all using (is_admin());
+create policy "Admins manage dispatch"       on dispatch_records     for all using (is_admin());
+create policy "Admins manage costs"          on maintenance_costs    for all using (is_admin());
+create policy "Admins manage depreciation"   on vehicle_depreciation for all using (is_admin());
+create policy "Admins manage insurance"      on insurance_records    for all using (is_admin());
+create policy "Admins manage registration"   on registration_records for all using (is_admin());
+create policy "Admins manage safety checks"  on safety_checks        for all using (is_admin());
+
+
+-- ================================================================
+-- STEP 11: AUTO-CREATE EMPLOYEE PROFILE ON SIGNUP
+-- ================================================================
+create or replace function handle_new_user()
+returns trigger as $$
+begin
+  insert into employee_profiles (user_id, role)
+  values (new.id, 'user');
+  return new;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure handle_new_user();
+Bryle Jan
+insert into storage.buckets (id, name, public)
+values ('vehicle-images', 'vehicle-images', true)
+on conflict do nothing;
+
+create policy "Anyone can view vehicle images"
+  on storage.objects for select
+  using (bucket_id = 'vehicle-images');
+
+create policy "Admins can upload vehicle images"
+  on storage.objects for insert
+  with check (bucket_id = 'vehicle-images' and is_admin());
+
+create policy "Admins can delete vehicle images"
+  on storage.objects for delete
+  using (bucket_id = 'vehicle-images' and is_admin());
