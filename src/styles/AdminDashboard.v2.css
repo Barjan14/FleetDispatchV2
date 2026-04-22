@@ -165,6 +165,7 @@
 
 .admin-user-btn {
   display: inline-flex;
+  color: black;
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
@@ -583,35 +584,74 @@
   .admin-vehicle-detail { grid-template-columns: 1fr; }
 }
 
+/* --- Vehicle Details Modal Typography & Layout --- */
+
 .admin-vehicle-detail-media {
-  height: 220px;
-  border-radius: 16px;
-  border: 1px solid var(--ad-border);
-  background:
-    radial-gradient(1200px 300px at 30% 10%, rgba(253, 209, 23, 0.35), transparent 60%),
-    linear-gradient(135deg, rgba(0, 98, 5, 0.55), rgba(0, 74, 31, 0.70));
-  background-size: cover, cover;
-  background-position: center, center;
-}
-
-/* When image is present, show it cleanly */
-.admin-vehicle-detail-media[style*="backgroundImage"] {
-  background-blend-mode: normal;
-}
-
-.admin-vehicle-detail-title {
+  width: 100%;
+  height: 100%;
+  min-height: 250px;
+  background-color: #f3f4f6;
+  border-radius: 8px;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 12px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
+.admin-vehicle-detail-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.admin-vehicle-detail-info {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.admin-vehicle-detail-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 16px;
+}
+
+/* 2-column grid for the vehicle stats */
 .admin-vehicle-detail-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 10px;
-  margin: 12px 0 14px 0;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.admin-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-detail-item .admin-muted-sm {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+}
+
+.admin-detail-item .admin-bold {
+  font-size: 15px;
+  color: #111827;
+}
+
+.admin-vehicle-detail-actions {
+  margin-top: auto; /* Pushes the buttons to the bottom of the right column */
+  display: flex;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
 }
 
 @media (max-width: 780px) {
