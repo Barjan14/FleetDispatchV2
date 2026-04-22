@@ -20,7 +20,17 @@ export default function VehiclesPage({
       <div className="admin-card-header">
         <h3>Vehicles <span className="admin-count">{vehicles.length}</span></h3>
         <div className="admin-actions">
-          <button className="admin-btn admin-btn-outline" type="button" onClick={onCycleSort} title="Cycle sort order">⇅ Sort</button>
+          <select
+            className="admin-btn admin-btn-outline"
+            value={vehicleSort}
+            onChange={(e) => onCycleSort(e.target.value)}
+          >
+            <option value="name_asc">Name (A–Z)</option>
+            <option value="name_desc">Name (Z–A)</option>
+            <option value="year_desc">Newest Year</option>
+            <option value="year_asc">Oldest Year</option>
+            <option value="status">Availability</option>
+          </select>
           <button className="admin-btn admin-btn-primary" onClick={onAdd}>+ Add Vehicle</button>
         </div>
       </div>
