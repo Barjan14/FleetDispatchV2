@@ -88,7 +88,7 @@ export default function VehicleDetailsModal({ vehicle, onEdit, onDelete, onClose
               </div>
 
             </div>
-          </div>
+          </div>  
         </div>
 
         <div className="admin-modal-footer">

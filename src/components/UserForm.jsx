@@ -3,12 +3,14 @@ import '../styles/UserForm.css'
 import { supabase } from '../supabaseClient'
 import { uploadImage, createPreviewUrl, revokePreviewUrl } from '../utils/imageUpload'
 import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 /* =========================
    DEPARTMENTS (from DB)
    ========================= */
 const DEPARTMENTS = ['Administration', 'Finance', 'HR', 'IT', 'Operations', 'Logistics', 'Marketing', 'Sales', 'Other']
 
 const PURPOSES = ['Official', 'Personal']
+
 
 /* =========================
    ICONS
@@ -84,6 +86,7 @@ export default function DispatchForm() {
   const today = new Date().toISOString().split('T')[0]
   const [authUser, setAuthUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const navigate = useNavigate();
 
   useEffect(() => {
     const getUser = async () => {
@@ -604,16 +607,19 @@ export default function DispatchForm() {
               ↺
             </button>
 
-            <Link to="/" style={{ textDecoration: 'none' }}>
-              <button 
-                className="fd-btn fd-btn-ghost"
-                enable={step === 1}
-                onClick={() => setStep(s => Math.max(1, s - 1))}
-              >
-                <ArrowLeftIcon />
-                Back
-              </button>
-            </Link>
+            <button 
+              className="fd-btn fd-btn-ghost"
+              onClick={() => {
+                if (step > 1) {
+                  setStep(s => s - 1)   // go to previous step
+                } else {
+                  navigate('/')         // only go to login/home if step 1
+                }
+              }}
+            >
+              <ArrowLeftIcon />
+              Back
+            </button>
 
             <div className="fd-footer-actions">
               {step < 3 && (
