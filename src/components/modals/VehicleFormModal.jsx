@@ -23,13 +23,13 @@ export default function VehicleFormModal({ mode, data, onChange, onSave, onClose
       const preview = createPreviewUrl(file);
       setPreviewUrl(preview);
 
-      const { url } = await uploadImage(
-        file,
-        'vehicle-images',
-        `vehicles/${data.id || 'new'}`
-      );
+    const { url } = await uploadImage(
+      file,
+      'vehicle-images',
+      `vehicles/temp`
+    );
 
-      onChange({ ...data, image_url: url });
+      onChange(prev => ({ ...prev, image_url: url }));
 
       revokePreviewUrl(preview);
       setPreviewUrl(url);
