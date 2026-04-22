@@ -10,6 +10,9 @@ import UsersPage from './pages/UsersPage';
 import BookingsPage from './pages/BookingsPage';
 import FleetsPage from './pages/FleetsPage';
 import VehicleLogsPage from './pages/VehicleLogsPage';
+import FinancialPage from './pages/FinancialPage';
+import InsurancePage from './pages/InsurancePage';
+import SafetyChecksPage from './pages/SafetyChecksPage';
 
 // Modal Components
 import VehicleDetailsModal from './modals/VehicleDetailsModal';
@@ -26,6 +29,9 @@ const NAV = [
   { key: 'bookings', icon: '📅', label: 'Bookings' },
   { key: 'fleets',   icon: '🗂️', label: 'Fleets'   },
   { key: 'logs',     icon: '📋', label: 'Logs'     },
+  { key: 'financial', icon: '💰', label: 'Financial Data' },
+  { key: 'insurance', icon: '🛡️', label: 'Insurance Records' },
+  { key: 'safety',    icon: '✅', label: 'Safety Checks' },
 ];
 
 export default function AdminDashboard() {
@@ -396,6 +402,18 @@ export default function AdminDashboard() {
             loading={logsLoading} 
             onRefresh={() => fetchVehicleChangeLogs().then(setVehicleLogs)} 
           />
+        )}
+
+        {tab === 'financial' && (
+          <FinancialPage />
+        )}
+
+        {tab === 'insurance' && (
+          <InsurancePage />
+        )}
+
+        {tab === 'safety' && (
+          <SafetyChecksPage />
         )}
       </main>
 
