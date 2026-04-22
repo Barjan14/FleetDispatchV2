@@ -158,11 +158,11 @@ const AdminLogin = () => {
               </div>
 
               <button type="submit" className="admin-btn admin-btn-primary" disabled={isLoading}>
-                {isLoading ? 'Authenticating...' : 'Access Admin Panel'}
+                {isLoading ? 'Authenticating...' : 'ACCESS ADMIN PANEL'}
               </button>
 
-              <button type="button" className="admin-btn admin-btn-back" onClick={() => navigateTo('/')}>
-                Back to User Login
+              <button type="button" className="admin-btn admin-btn-back" onClick={() => navigateTo('/request-form')}>
+                REQUEST FORM
               </button>
 
             </form>

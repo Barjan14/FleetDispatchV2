@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import '../styles/UserForm.css'
 import { supabase } from '../supabaseClient'
 import { uploadImage, createPreviewUrl, revokePreviewUrl } from '../utils/imageUpload'
-
+import { Link } from 'react-router-dom';
 /* =========================
    DEPARTMENTS (from DB)
    ========================= */
@@ -604,14 +604,16 @@ export default function DispatchForm() {
               ↺
             </button>
 
-            <button 
-              className="fd-btn fd-btn-ghost"
-              onClick={() => setStep(s => Math.max(1, s - 1))}
-              disabled={step === 1}
-            >
-              <ArrowLeftIcon />
-              Back
-            </button>
+            <Link to="/" style={{ textDecoration: 'none' }}>
+              <button 
+                className="fd-btn fd-btn-ghost"
+                enable={step === 1}
+                onClick={() => setStep(s => Math.max(1, s - 1))}
+              >
+                <ArrowLeftIcon />
+                Back
+              </button>
+            </Link>
 
             <div className="fd-footer-actions">
               {step < 3 && (

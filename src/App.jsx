@@ -12,7 +12,6 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/request-form" element={<UserForm />} />
         <Route path="/admin-login" element={<AdminLogin />} />
-        <Route path="/dashboard" element={<UserDashboard />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
