@@ -25,10 +25,21 @@ export default function VehiclesPage({
         </div>
       </div>
       <div className="admin-vehicle-grid">
-        {vehicles.length===0 && <div className="admin-empty">No vehicles yet.</div>}
-        {sortedVehicles.map(v => (
+        {vehicles.length===0 && <div className="admin-empty">No vehicles yet.</div>}        {sortedVehicles.map(v => (
           <button key={v.id} type="button" className="admin-vehicle-card" onClick={()=>onViewDetails(v)}>
-            <div className="admin-vehicle-media"><div className="admin-vehicle-img" aria-hidden="true"/></div>
+            <div className="admin-vehicle-media">
+              <div 
+                className={`admin-vehicle-img ${v.image_url ? 'has-image' : ''}`}
+                aria-hidden="true"
+                data-image-url={v.image_url}
+                style={v.image_url ? {
+                  backgroundImage: `url("${v.image_url}")`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat'
+                } : {}}
+              />
+            </div>
             <div className="admin-vehicle-body">
               <div className="admin-vehicle-title-row">
                 <div className="admin-vehicle-title">

@@ -14,10 +14,16 @@ export default function VehicleDetailsModal({ vehicle, onEdit, onDelete, onClose
         <div className="admin-modal-header">
           <h3>Vehicle Details</h3>
           <button className="admin-btn admin-btn-outline admin-close" onClick={onClose}>✕</button>
-        </div>
-        <div className="admin-modal-body">
-          <div className="admin-vehicle-detail">
-            <div className="admin-vehicle-detail-media" aria-hidden="true"/>
+        </div>        <div className="admin-modal-body">
+          <div className="admin-vehicle-detail">            <div 
+              className="admin-vehicle-detail-media" 
+              style={vehicle.image_url ? {
+                backgroundImage: `url("${vehicle.image_url}")`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat'
+              } : {}}
+            />
             <div className="admin-vehicle-detail-info">
               <div className="admin-vehicle-detail-title">
                 <div>

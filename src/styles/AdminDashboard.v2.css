@@ -28,6 +28,8 @@
   color: var(--ad-text);
 }
 
+/* ================= SIDEBAR ================= */
+
 .admin-sidebar {
   position: sticky;
   top: 0;
@@ -59,9 +61,9 @@
   padding: 12px 12px;
   border-radius: 12px;
   cursor: pointer;
-  user-select: none;    
-  color: rgba(0, 0, 0, 0.85);
+  user-select: none;
   transition: background 160ms ease, transform 160ms ease;
+  color: rgba(255, 255, 255, 0.92);
 }
 
 .admin-nav:hover {
@@ -126,11 +128,8 @@
 
 .admin-main {
   flex: 1;
-  padding: 0;
-  max-width: 100%;
   overflow: auto;
   min-height: 100vh;
-  height: auto;
 }
 
 .admin-topbar {
@@ -286,10 +285,7 @@
 
 .admin-card.admin-card-compact {
   max-width: 1400px;
-  margin-left: auto;
-  margin-left: 20px;
-  margin-right: auto;
-  margin-right: 20px;
+  margin: 0 auto;
 }
 
 .admin-card-header {
@@ -450,13 +446,11 @@
 
 .admin-vehicle-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 12px;
-  padding: 12px;
-
-  /* Keep vehicles content within the viewport (scroll inside the grid, not the page) */
-  max-height: calc(100vh - 220px);
-  overflow: auto;
+  /* The magic line: Add as many columns as fit, but never let a card get smaller than 280px */
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px; /* Space between the cards */
+  align-items: start; /* Stops short cards from stretching vertically to match taller ones */
+  width: 100%;
 }
 
 @media (max-width: 1200px) {
@@ -492,36 +486,56 @@
 }
 
 /* Top 2/4 area = image template */
+/* The container holding the image */
+/* The container holding the image */
 .admin-vehicle-media {
-  height: 110px;
-  background: rgba(0, 98, 5, 0.08);
+  width: 100%;
+  height: 200px; 
   position: relative;
+  overflow: hidden;
+  background-color: #f3f4f6; /* Light gray placeholder color */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
+/* The actual <img> tag */
 .admin-vehicle-img {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(1200px 300px at 30% 10%, rgba(253, 209, 23, 0.35), transparent 60%),
-    linear-gradient(135deg, rgba(0, 98, 5, 0.50), rgba(0, 74, 31, 0.65));
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Ensures the image fills the space without distortion */
+  display: block;
 }
+
+/* Fallback text if no image exists */
+.admin-vehicle-img-placeholder {
+  color: #9ca3af;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* --- Card Body Layout --- */
+
+/* --- Card Body Layout & Typography --- */
 
 .admin-vehicle-body {
-  padding: 10px 10px 12px 10px;
+  padding: 16px; /* Slightly increased padding for better breathing room */
+  font-family: inherit; /* Ensures it perfectly matches your dashboard's global font */
 }
 
+/* Layouts */
 .admin-vehicle-title-row {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .admin-vehicle-title {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px; 
 }
 
 .admin-vehicle-meta {
@@ -529,7 +543,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 16px; /* Gives nice separation before the buttons */
 }
 
 .admin-vehicle-actions {
@@ -538,12 +552,31 @@
   flex-wrap: wrap;
 }
 
-/* ===== Vehicle details modal layout ===== */
+/* --- Strict Typography Rules --- */
 
-.admin-vehicle-detail {
-  display: grid;
-  grid-template-columns: 1.05fr 1.35fr;
-  gap: 14px;
+/* Vehicle Name */
+.admin-vehicle-title .admin-bold {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827; /* Near-black for primary emphasis */
+  line-height: 1.2;
+  margin: 0;
+}
+
+/* ID and Plate Number */
+.admin-vehicle-title .admin-muted-sm {
+  font-size: 13px;
+  font-weight: 400;
+  color: #6b7280; /* Medium gray so it doesn't fight the title */
+  line-height: 1.4;
+}
+
+/* Model and Year */
+.admin-vehicle-meta .admin-muted {
+  font-size: 14px;
+  font-weight: 500;
+  color: #4b5563; /* Slightly darker gray to anchor the middle of the card */
+  line-height: 1.4;
 }
 
 @media (max-width: 780px) {
@@ -557,6 +590,13 @@
   background:
     radial-gradient(1200px 300px at 30% 10%, rgba(253, 209, 23, 0.35), transparent 60%),
     linear-gradient(135deg, rgba(0, 98, 5, 0.55), rgba(0, 74, 31, 0.70));
+  background-size: cover, cover;
+  background-position: center, center;
+}
+
+/* When image is present, show it cleanly */
+.admin-vehicle-detail-media[style*="backgroundImage"] {
+  background-blend-mode: normal;
 }
 
 .admin-vehicle-detail-title {
@@ -685,7 +725,7 @@
 
 .admin-form-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 12px;
 }
@@ -930,8 +970,34 @@
   .admin-modal-header {
     padding: 12px 14px;
   }
-  .admin-modal-body {
-    padding: 14px;
+.admin-modal-body {
+  /* 1. Consistent Spacing */
+  padding: 24px;
+  
+  /* 2. Global Text Consistency for the Modal */
+  font-family: inherit;
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.5;
+
+  /* 3. THE FIX FOR ZOOMING OUT: 
+     This forces the modal body to scroll internally if the screen is too small, 
+     keeping your Header and Footer (Save/Cancel buttons) permanently glued in place! */
+  max-height: calc(100vh - 180px); 
+  overflow-y: auto; 
+}
+  .admin-modal-body::-webkit-scrollbar {
+    width: 6px;
+  }
+  .admin-modal-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .admin-modal-body::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 10px;
+  }
+  .admin-modal-body::-webkit-scrollbar-thumb:hover {
+    background-color: #94a3b8;
   }
 }
 
@@ -1040,4 +1106,53 @@
 .admin-table thead th {
   background: #fff;
   color: var(--ad-text);
+}
+
+/* --- Modal 2-Column Layout --- */
+
+.admin-modal-body-split {
+  display: grid;
+  grid-template-columns: 1fr 2fr; /* Left column takes 1 fraction, Right takes 2 */
+  gap: 24px;
+  align-items: stretch; /* Makes both columns match height */
+}
+
+/* Style the dashed upload box to fill the column nicely */
+.admin-image-upload-box {
+  border: 2px dashed #ccc;
+  border-radius: 6px;
+  padding: 16px;
+  text-align: center;
+  height: calc(100% - 24px); /* Fills available space minus label height */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #fafafa;
+  transition: border-color 0.2s;
+}
+
+.admin-image-upload-box:hover {
+  border-color: #999;
+}
+
+/* Ensure the image scales neatly within its new column */
+.admin-preview-img {
+  max-width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+/* Responsive fallback: Stack vertically on small screens */
+@media (max-width: 768px) {
+  .admin-modal-body-split {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .admin-image-upload-box {
+    height: auto;
+    min-height: 150px;
+  }
 }

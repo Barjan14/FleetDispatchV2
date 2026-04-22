@@ -1,21 +1,14 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import '../styles/UserForm.css'
+import { supabase } from '../supabaseClient'
+import { uploadImage, createPreviewUrl, revokePreviewUrl } from '../utils/imageUpload'
 
 /* =========================
-   VEHICLES & OPTIONS
+   DEPARTMENTS (from DB)
    ========================= */
-const VEHICLES = [
-  { id: '', label: 'Select vehicle type' },
-  { id: 'Cargo Truck', label: 'Cargo Truck' },
-  { id: 'Delivery Van', label: 'Delivery Van' },
-  { id: 'Flatbed', label: 'Flatbed' },
-  { id: 'Refrigerated Van', label: 'Refrigerated Van' },
-  { id: 'Passenger Van', label: 'Passenger Van' },
-  { id: 'Sedan', label: 'Sedan' },
-]
+const DEPARTMENTS = ['Administration', 'Finance', 'HR', 'IT', 'Operations', 'Logistics', 'Marketing', 'Sales', 'Other']
 
 const PURPOSES = ['Official', 'Personal']
-const DEPARTMENTS = ['Administration', 'Finance', 'HR', 'IT', 'Operations', 'Logistics', 'Marketing', 'Sales', 'Other']
 
 /* =========================
    ICONS
@@ -89,6 +82,17 @@ const UserIcon = () => (
 
 export default function DispatchForm() {
   const today = new Date().toISOString().split('T')[0]
+  const [authUser, setAuthUser] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setAuthUser(user)
+      setLoading(false)
+    }
+    getUser()
+  }, [])
 
   const [step, setStep] = useState(1)
   const [form, setForm] = useState({
@@ -105,11 +109,14 @@ export default function DispatchForm() {
     purposeDetails: '',
     priority: 'Normal',
   })
-
   const [submitted, setSubmitted] = useState(false)
   const [showSummary, setShowSummary] = useState(false)
   const [status, setStatus] = useState('Pending')
   const [errors, setErrors] = useState({})
+  const [toastMsg, setToastMsg] = useState('')
+  const [documentFile, setDocumentFile] = useState(null)
+  const [documentPreview, setDocumentPreview] = useState('')
+  const [uploading, setUploading] = useState(false)
 
   const set = (key, val) => {
     setForm(f => ({ ...f, [key]: val }))
@@ -147,12 +154,75 @@ export default function DispatchForm() {
     if (!validateStep()) return
     setStep(s => s + 1)
   }
-
   function handleSubmit() {
     if (!validateStep()) return
-    setStatus('Dispatched')
-    setSubmitted(true)
-    setShowSummary(true)
+    submitToSupabase()
+  }
+  const submitToSupabase = async () => {
+    try {
+      if (!authUser) {
+        setToastMsg('Please log in first')
+        return
+      }
+
+      setUploading(true)
+      const startDt = new Date(`${form.requestDate}T${form.departureTime}`).toISOString()
+      const endDt = form.returnDate 
+        ? new Date(`${form.returnDate}T${form.returnTime || '17:00'}`).toISOString()
+        : new Date(new Date(startDt).getTime() + 8 * 60 * 60 * 1000).toISOString()
+
+      // Upload document if provided
+      let documentUrl = ''
+      if (documentFile) {
+        try {
+          const { url } = await uploadImage(
+            documentFile, 
+            'vehicle-images', 
+            `bookings/${authUser.id}`
+          )
+          documentUrl = url
+          if (documentPreview) revokePreviewUrl(documentPreview)
+        } catch (err) {
+          throw new Error(`Document upload failed: ${err.message}`)
+        }
+      }
+
+      const { error } = await supabase.from('vehicle_bookings').insert({
+        user_id: authUser.id,
+        purpose: form.purpose,
+        destination: form.destination,
+        start_datetime: startDt,
+        end_datetime: endDt,
+        status: 'Pending',
+        admin_notes: (form.purposeDetails || '') + (documentUrl ? `\nAttachment: ${documentUrl}` : '')
+      })
+
+      if (error) throw error
+
+      setStatus('Pending')
+      setSubmitted(true)
+      setShowSummary(true)
+      setToastMsg('Request submitted successfully!')
+      setTimeout(() => setToastMsg(''), 3000)
+    } catch (err) {
+      setToastMsg(`Error: ${err.message}`)
+      setTimeout(() => setToastMsg(''), 3000)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleDocumentUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    try {
+      const preview = createPreviewUrl(file)
+      setDocumentPreview(preview)
+      setDocumentFile(file)
+    } catch (err) {
+      setToastMsg(`Error: ${err.message}`)
+    }
   }
   function handleReset() {
     setForm({
@@ -176,16 +246,25 @@ export default function DispatchForm() {
     setStatus('Pending')
     setErrors({})
   }
-
   const steps = [
     { num: 1, label: 'Employee Info' },
     { num: 2, label: 'Schedule' },
     { num: 3, label: 'Destination & Purpose' },
   ]
 
+  if (loading) return <div className="fd-page"><div className="fd-container-modern">Loading...</div></div>
+
   return (
     <div className="fd-page">
       <div className="fd-container-modern">
+        
+        {toastMsg && <div style={{
+          position: 'fixed', top: '20px', right: '20px', 
+          background: toastMsg.includes('Error') ? '#ef4444' : '#10b981',
+          color: 'white', padding: '12px 20px', borderRadius: '6px', zIndex: 9999
+        }}>
+          {toastMsg}
+        </div>}
         
         {/* HEADER */}
         <header className="fd-header-modern">
@@ -448,9 +527,7 @@ export default function DispatchForm() {
                       <option>Urgent</option>
                       <option>Scheduled</option>
                     </select>
-                  </div>
-
-                  <div className="fd-field full">
+                  </div>                  <div className="fd-field full">
                     <label>Purpose Details (Optional)</label>
                     <textarea 
                       value={form.purposeDetails}
@@ -458,6 +535,58 @@ export default function DispatchForm() {
                       placeholder="Provide additional details about your errand or trip..."
                       rows={3}
                     />
+                  </div>
+
+                  <div className="fd-field full">
+                    <label>Upload Document or Image (Optional)</label>
+                    <div style={{
+                      border: '2px dashed #ddd',
+                      borderRadius: '6px',
+                      padding: '16px',
+                      textAlign: 'center',
+                      cursor: 'pointer'
+                    }}>
+                      {documentPreview && (
+                        <div style={{ marginBottom: '12px' }}>
+                          {documentFile?.type.startsWith('image/') ? (
+                            <img 
+                              src={documentPreview} 
+                              alt="Preview" 
+                              style={{
+                                maxWidth: '100%',
+                                maxHeight: '150px',
+                                borderRadius: '4px'
+                              }}
+                            />
+                          ) : (
+                            <div style={{ color: '#666' }}>
+                              📄 {documentFile?.name}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        onChange={handleDocumentUpload}
+                        disabled={uploading}
+                        style={{ display: 'none' }}
+                        id="doc-upload"
+                        accept="image/*,.pdf,.doc,.docx"
+                      />
+                      <label 
+                        htmlFor="doc-upload"
+                        style={{
+                          cursor: uploading ? 'not-allowed' : 'pointer',
+                          display: 'block',
+                          padding: '8px'
+                        }}
+                      >
+                        {uploading ? 'Uploading...' : documentFile ? 'Change File' : 'Click to upload'}
+                      </label>
+                      <div style={{ fontSize: '12px', color: '#999', marginTop: '8px' }}>
+                        Max 5MB • Images, PDF, Word docs
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -490,15 +619,13 @@ export default function DispatchForm() {
                   Next
                   <ArrowRightIcon />
                 </button>
-              )}
-
-              {step === 3 && (
+              )}              {step === 3 && (
                 <button 
                   className="fd-btn fd-btn-primary"
-                  disabled={!canSubmit}
+                  disabled={!canSubmit || uploading}
                   onClick={handleSubmit}
                 >
-                  Submit Request
+                  {uploading ? 'Uploading...' : 'Submit Request'}
                   <CheckIcon />
                 </button>
               )}

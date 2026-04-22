@@ -52,11 +52,22 @@ export default function AdminDashboard() {
   const [modalType, setModalType] = useState('');
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
-
   // Form State
-  const [vForm, setVForm] = useState({ name: '', plate_number: '', model: '', year: '', condition: 'Good', fleet_id: '' });
+  const [vForm, setVForm] = useState({ 
+    name: '', 
+    plate_number: '', 
+    model: '', 
+    year: '', 
+    fuel_type: 'Diesel',
+    condition: 'Good', 
+    odometer_km: 0,
+    is_available: true,
+    fleet_id: '',
+    image_url: '' // <-- ADD THIS
+  });
   const [uForm, setUForm] = useState({
-    username: '', email: '', password: '', is_staff: false,
+    username: '', 
+    is_staff: false,
     profile: { employee_id: '', department: '', phone: '' }
   });
 
@@ -167,10 +178,14 @@ export default function AdminDashboard() {
     const label = { name_asc:'Name (A→Z)', name_desc:'Name (Z→A)', condition:'Condition', available:'Availability', newest:'Newest' }[next];
     showToast(`Sorted by: ${label}`, 'ok');
   };
-
   // ── Vehicle CRUD ──────────────────────────────────────────
   const openAddVehicle = () => {
-    setVForm({ name: '', plate_number: '', model: '', year: '', condition: 'Good', fleet_id: '' });
+    setVForm({ 
+      name: '', plate_number: '', model: '', year: '', 
+      fuel_type: 'Diesel', condition: 'Good', odometer_km: 0,
+      is_available: true, fleet_id: '',
+      image_url: '' // <-- ADD THIS
+    });
     setModalType('addVehicle');
   };
 
@@ -179,34 +194,69 @@ export default function AdminDashboard() {
     setSelectedVehicle(v);
     setModalType('editVehicle');
   };
-
   const saveVehicle = async () => {
     const isEdit = modalType === 'editVehicle';
+
     const payload = { 
       name: vForm.name, 
       plate_number: vForm.plate_number, 
       model: vForm.model, 
-      year: vForm.year ? parseInt(vForm.year) : null, 
-      condition: vForm.condition, 
-      fleet_id: vForm.fleet_id || null 
+      year: vForm.year ? parseInt(vForm.year) : null,
+      fuel_type: vForm.fuel_type,
+      condition: vForm.condition,
+      odometer_km: parseFloat(vForm.odometer_km) || 0,
+      is_available: vForm.is_available !== false,
+      fleet_id: vForm.fleet_id || null,
+      image_url: vForm.image_url
     };
 
     try {
       if (isEdit) {
-        await logVehicleUpdate(selectedVehicle, { ...selectedVehicle, ...payload }, adminUser.username || 'admin');
-        const { error } = await supabase.from('vehicles').update(payload).eq('id', selectedVehicle.id);
+        const vehicleId = selectedVehicle?.id;
+
+        if (!vehicleId) {
+          showToast('No vehicle selected', 'err');
+          return;
+        }
+
+        await logVehicleUpdate(
+          selectedVehicle,
+          { ...selectedVehicle, ...payload },
+          adminUser.username || 'admin'
+        );
+
+        const { error } = await supabase
+          .from('vehicles')
+          .update(payload)
+          .eq('id', vehicleId);
+
         if (error) throw error;
+
       } else {
-        const { data, error } = await supabase.from('vehicles').insert(payload).select().single();
+        const { data, error } = await supabase
+          .from('vehicles')
+          .insert(payload)
+          .select()
+          .single();
+
         if (error) throw error;
-        await logVehicleChange('create', data.id, data.name, adminUser.username || 'admin');
+
+        await logVehicleChange(
+          'create',
+          data.id,
+          data.name,
+          adminUser.username || 'admin'
+        );
       }
+
       showToast('Vehicle saved successfully');
       setModalType('');
       fetchAll();
-    } catch (err) { showToast(err.message, 'err'); }
-  };
 
+    } catch (err) {
+      showToast(err.message, 'err');
+    }
+  };
   const handleDeleteVehicle = async (id) => {
     if (window.confirm('Delete this vehicle?')) {
       const { error } = await supabase.from('vehicles').delete().eq('id', id);
@@ -353,7 +403,7 @@ export default function AdminDashboard() {
       {modalType === 'vehicleDetails' && (
         <VehicleDetailsModal 
           vehicle={selectedVehicle} 
-          onEdit={() => setModalType('editVehicle')} 
+          onEdit={() => openEditVehicle(selectedVehicle)} 
           onClose={() => setModalType('')} 
         />
       )}

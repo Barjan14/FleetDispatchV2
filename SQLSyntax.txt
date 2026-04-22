@@ -1,389 +1,267 @@
--- ================================================================
--- FLEET DISPATCH — SUPABASE SQL SCHEMA
--- Run this entire script in Supabase SQL Editor
--- ================================================================
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
 
-
--- ─── STEP 1: CORE TABLES ────────────────────────────────────
-
--- Employee Profiles (extends auth.users)
-create table if not exists employee_profiles (
-  id          bigserial primary key,
-  user_id     uuid references auth.users(id) on delete cascade unique not null,
-  employee_id text unique,
-  department  text default '',
-  phone       text default '',
-  role        text default 'user' check (role in ('user', 'admin')),
-  created_at  timestamptz default now()
+CREATE TABLE public.dispatch_records (
+  id bigint NOT NULL DEFAULT nextval('dispatch_records_id_seq'::regclass),
+  vehicle_id bigint NOT NULL,
+  driver_id uuid,
+  requested_by uuid,
+  destination text DEFAULT ''::text,
+  purpose text DEFAULT ''::text,
+  status text DEFAULT 'Scheduled'::text CHECK (status = ANY (ARRAY['Scheduled'::text, 'Dispatched'::text, 'Returned'::text, 'Cancelled'::text])),
+  scheduled_departure timestamp with time zone,
+  actual_departure timestamp with time zone,
+  actual_return timestamp with time zone,
+  notes text DEFAULT ''::text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT dispatch_records_pkey PRIMARY KEY (id),
+  CONSTRAINT dispatch_records_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(id),
+  CONSTRAINT dispatch_records_driver_id_fkey FOREIGN KEY (driver_id) REFERENCES auth.users(id),
+  CONSTRAINT dispatch_records_requested_by_fkey FOREIGN KEY (requested_by) REFERENCES auth.users(id)
 );
-
--- Fleets
-create table if not exists fleets (
-  id         bigserial primary key,
-  name       text not null,
-  created_at timestamptz default now()
+CREATE TABLE public.driver_profiles (
+  id bigint NOT NULL DEFAULT nextval('driver_profiles_id_seq'::regclass),
+  user_id uuid NOT NULL UNIQUE,
+  license_number text DEFAULT ''::text,
+  license_type text CHECK (license_type = ANY (ARRAY['A'::text, 'B'::text, 'C'::text, 'BE'::text, 'CE'::text])),
+  license_expiry date,
+  date_of_birth date,
+  contact_number text DEFAULT ''::text,
+  emergency_contact text DEFAULT ''::text,
+  address text DEFAULT ''::text,
+  is_active_driver boolean DEFAULT true,
+  availability text DEFAULT 'Available'::text CHECK (availability = ANY (ARRAY['Available'::text, 'On Trip'::text, 'On Leave'::text, 'Off Duty'::text, 'Suspended'::text])),
+  assigned_fleet_id bigint,
+  assigned_vehicle_id bigint,
+  notes text DEFAULT ''::text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT driver_profiles_pkey PRIMARY KEY (id),
+  CONSTRAINT driver_profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
+  CONSTRAINT driver_profiles_assigned_fleet_id_fkey FOREIGN KEY (assigned_fleet_id) REFERENCES public.fleets(id),
+  CONSTRAINT driver_profiles_assigned_vehicle_id_fkey FOREIGN KEY (assigned_vehicle_id) REFERENCES public.vehicles(id)
 );
-
--- Vehicles
-create table if not exists vehicles (
-  id           bigserial primary key,
-  fleet_id     bigint references fleets(id) on delete set null,
-  name         text not null,
-  plate_number text unique not null,
-  model        text default '',
-  year         int,
-  fuel_type    text default 'Diesel' check (fuel_type in ('Gasoline','Diesel','Electric','Hybrid')),
-  condition    text default 'Good' check (condition in ('Good','Fair','Under Repair','Out of Service')),
-  is_available boolean default true,
-  image_url    text,
-  odometer_km  float default 0,
-  created_at   timestamptz default now()
-);
-
--- Vehicle Bookings
-create table if not exists vehicle_bookings (
-  id             bigserial primary key,
-  vehicle_id     bigint references vehicles(id) on delete cascade not null,
-  user_id        uuid references auth.users(id) on delete cascade not null,
-  purpose        text default '',
-  destination    text default '',
-  start_datetime timestamptz not null,
-  end_datetime   timestamptz not null,
-  actual_return  timestamptz,
-  status         text default 'Pending' check (status in ('Pending','Approved','Rejected','Ongoing','Returned')),
-  admin_notes    text default '',
-  created_at     timestamptz default now()
-);
-
-
--- ─── STEP 2: REPAIR HISTORY ─────────────────────────────────
-
-create table if not exists repair_records (
-  id            bigserial primary key,
-  vehicle_id    bigint references vehicles(id) on delete cascade not null,
-  reported_by   uuid references auth.users(id) on delete set null,
-  issue         text not null,
-  repair_done   text default '',
-  status        text default 'Pending' check (status in ('Pending','In Progress','Completed')),
-  shop_name     text default '',
-  repair_cost   numeric(10,2) default 0,
-  date_reported date not null,
-  date_resolved date,
-  created_at    timestamptz default now()
-);
-
-create table if not exists repair_parts (
-  id        bigserial primary key,
-  repair_id bigint references repair_records(id) on delete cascade not null,
-  part_name text not null,
-  quantity  int default 1,
-  unit_cost numeric(10,2) default 0
-);
-
-
--- ─── STEP 3: SPARE PARTS ────────────────────────────────────
-
-create table if not exists suppliers (
-  id         bigserial primary key,
-  name       text not null,
-  contact    text default '',
-  address    text default '',
-  email      text default '',
-  created_at timestamptz default now()
-);
-
-create table if not exists spare_parts (
-  id            bigserial primary key,
-  name          text not null,
-  part_number   text default '',
-  supplier_id   bigint references suppliers(id) on delete set null,
-  quantity      int default 0,
-  unit_cost     numeric(10,2) default 0,
-  reorder_level int default 5,
-  created_at    timestamptz default now()
-);
-
-
--- ─── STEP 4: FUEL USAGE ─────────────────────────────────────
-
-create table if not exists fuel_records (
-  id                bigserial primary key,
-  vehicle_id        bigint references vehicles(id) on delete cascade not null,
-  driver_id         uuid references auth.users(id) on delete set null,
-  date              date not null,
-  liters            float not null,
-  cost_per_liter    numeric(8,2) default 0,
-  total_cost        numeric(10,2) default 0,
-  odometer_km       float,
-  km_per_liter      float,
-  receipt_image_url text,
-  station_name      text default '',
-  notes             text default '',
-  created_at        timestamptz default now()
-);
-
-
--- ─── STEP 5: DISTANCE / TRIP LOGS ───────────────────────────
-
-create table if not exists trip_logs (
-  id             bigserial primary key,
-  vehicle_id     bigint references vehicles(id) on delete cascade not null,
-  driver_id      uuid references auth.users(id) on delete set null,
-  origin         text default '',
-  destination    text default '',
-  purpose        text default '',
-  status         text default 'Scheduled' check (status in ('Scheduled','Ongoing','Completed','Cancelled')),
-  start_datetime timestamptz,
-  end_datetime   timestamptz,
-  odometer_start float,
-  odometer_end   float,
-  distance_km    float generated always as (
-                   case
-                     when odometer_end is not null and odometer_start is not null
-                     then odometer_end - odometer_start
-                     else null
-                   end
-                 ) stored,
-  created_at     timestamptz default now()
-);
-
-
--- ─── STEP 6: DRIVER INFO ────────────────────────────────────
-
-create table if not exists driver_profiles (
-  id                  bigserial primary key,
-  user_id             uuid references auth.users(id) on delete cascade unique not null,
-  license_number      text default '',
-  license_type        text check (license_type in ('A','B','C','BE','CE')),
-  license_expiry      date,
-  date_of_birth       date,
-  contact_number      text default '',
-  emergency_contact   text default '',
-  address             text default '',
-  is_active_driver    boolean default true,
-  availability        text default 'Available' check (availability in ('Available','On Trip','On Leave','Off Duty','Suspended')),
-  assigned_fleet_id   bigint references fleets(id) on delete set null,
-  assigned_vehicle_id bigint references vehicles(id) on delete set null,
-  notes               text default '',
-  created_at          timestamptz default now()
-);
-
-create table if not exists driver_violations (
-  id          bigserial primary key,
-  driver_id   bigint references driver_profiles(id) on delete cascade not null,
-  date        date not null,
+CREATE TABLE public.driver_violations (
+  id bigint NOT NULL DEFAULT nextval('driver_violations_id_seq'::regclass),
+  driver_id bigint NOT NULL,
+  date date NOT NULL,
   description text,
-  severity    text default 'Minor' check (severity in ('Minor','Major','Critical')),
-  fine_amount numeric(10,2) default 0,
-  resolved    boolean default false,
-  created_at  timestamptz default now()
+  severity text DEFAULT 'Minor'::text CHECK (severity = ANY (ARRAY['Minor'::text, 'Major'::text, 'Critical'::text])),
+  fine_amount numeric DEFAULT 0,
+  resolved boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT driver_violations_pkey PRIMARY KEY (id),
+  CONSTRAINT driver_violations_driver_id_fkey FOREIGN KEY (driver_id) REFERENCES public.driver_profiles(id)
 );
-
-
--- ─── STEP 7: DISPATCH RECORDS ───────────────────────────────
-
-create table if not exists dispatch_records (
-  id                  bigserial primary key,
-  vehicle_id          bigint references vehicles(id) on delete cascade not null,
-  driver_id           uuid references auth.users(id) on delete set null,
-  requested_by        uuid references auth.users(id) on delete set null,
-  destination         text default '',
-  purpose             text default '',
-  status              text default 'Scheduled' check (status in ('Scheduled','Dispatched','Returned','Cancelled')),
-  scheduled_departure timestamptz,
-  actual_departure    timestamptz,
-  actual_return       timestamptz,
-  notes               text default '',
-  created_at          timestamptz default now()
+CREATE TABLE public.employee_profiles (
+  id bigint NOT NULL DEFAULT nextval('employee_profiles_id_seq'::regclass),
+  user_id uuid NOT NULL UNIQUE,
+  employee_id text UNIQUE,
+  department text DEFAULT ''::text,
+  phone text DEFAULT ''::text,
+  role text DEFAULT 'user'::text CHECK (role = ANY (ARRAY['user'::text, 'admin'::text])),
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT employee_profiles_pkey PRIMARY KEY (id),
+  CONSTRAINT employee_profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
 );
-
-
--- ─── STEP 8: FINANCIAL DATA ─────────────────────────────────
-
-create table if not exists maintenance_costs (
-  id          bigserial primary key,
-  vehicle_id  bigint references vehicles(id) on delete cascade not null,
-  category    text check (category in ('Fuel','Repair','Parts','Insurance','Registration','Depreciation','Other')),
-  description text default '',
-  amount      numeric(12,2) default 0,
-  date        date,
-  receipt_ref text default '',
-  created_at  timestamptz default now()
+CREATE TABLE public.fleets (
+  id bigint NOT NULL DEFAULT nextval('fleets_id_seq'::regclass),
+  name text NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT fleets_pkey PRIMARY KEY (id)
 );
-
-create table if not exists vehicle_depreciation (
-  id                   bigserial primary key,
-  vehicle_id           bigint references vehicles(id) on delete cascade unique not null,
-  purchase_price       numeric(14,2) default 0,
-  purchase_date        date,
-  useful_life_years    int default 10,
-  residual_value       numeric(14,2) default 0,
-  current_value        numeric(14,2),
-  depreciation_method  text default 'Straight-line',
-  updated_at           timestamptz default now()
+CREATE TABLE public.fuel_records (
+  id bigint NOT NULL DEFAULT nextval('fuel_records_id_seq'::regclass),
+  vehicle_id bigint NOT NULL,
+  driver_id uuid,
+  date date NOT NULL,
+  liters double precision NOT NULL,
+  cost_per_liter numeric DEFAULT 0,
+  total_cost numeric DEFAULT 0,
+  odometer_km double precision,
+  km_per_liter double precision,
+  receipt_image_url text,
+  station_name text DEFAULT ''::text,
+  notes text DEFAULT ''::text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT fuel_records_pkey PRIMARY KEY (id),
+  CONSTRAINT fuel_records_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(id),
+  CONSTRAINT fuel_records_driver_id_fkey FOREIGN KEY (driver_id) REFERENCES auth.users(id)
 );
-
-
--- ─── STEP 9: COMPLIANCE ─────────────────────────────────────
-
-create table if not exists insurance_records (
-  id             bigserial primary key,
-  vehicle_id     bigint references vehicles(id) on delete cascade not null,
-  provider       text default '',
-  policy_number  text default '',
-  coverage_type  text default '',
-  start_date     date,
-  expiry_date    date,
-  premium_amount numeric(12,2) default 0,
-  is_active      boolean default true,
-  document_url   text,
-  created_at     timestamptz default now()
+CREATE TABLE public.insurance_records (
+  id bigint NOT NULL DEFAULT nextval('insurance_records_id_seq'::regclass),
+  vehicle_id bigint NOT NULL,
+  provider text DEFAULT ''::text,
+  policy_number text DEFAULT ''::text,
+  coverage_type text DEFAULT ''::text,
+  start_date date,
+  expiry_date date,
+  premium_amount numeric DEFAULT 0,
+  is_active boolean DEFAULT true,
+  document_url text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT insurance_records_pkey PRIMARY KEY (id),
+  CONSTRAINT insurance_records_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(id)
 );
-
-create table if not exists registration_records (
-  id                  bigserial primary key,
-  vehicle_id          bigint references vehicles(id) on delete cascade not null,
-  registration_number text default '',
-  registered_date     date,
-  expiry_date         date,
-  amount_paid         numeric(10,2) default 0,
-  document_url        text,
-  created_at          timestamptz default now()
+CREATE TABLE public.maintenance_costs (
+  id bigint NOT NULL DEFAULT nextval('maintenance_costs_id_seq'::regclass),
+  vehicle_id bigint NOT NULL,
+  category text CHECK (category = ANY (ARRAY['Fuel'::text, 'Repair'::text, 'Parts'::text, 'Insurance'::text, 'Registration'::text, 'Depreciation'::text, 'Other'::text])),
+  description text DEFAULT ''::text,
+  amount numeric DEFAULT 0,
+  date date,
+  receipt_ref text DEFAULT ''::text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT maintenance_costs_pkey PRIMARY KEY (id),
+  CONSTRAINT maintenance_costs_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(id)
 );
-
-create table if not exists safety_checks (
-  id            bigserial primary key,
-  vehicle_id    bigint references vehicles(id) on delete cascade not null,
-  checked_by    uuid references auth.users(id) on delete set null,
-  check_date    date,
+CREATE TABLE public.registration_records (
+  id bigint NOT NULL DEFAULT nextval('registration_records_id_seq'::regclass),
+  vehicle_id bigint NOT NULL,
+  registration_number text DEFAULT ''::text,
+  registered_date date,
+  expiry_date date,
+  amount_paid numeric DEFAULT 0,
+  document_url text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT registration_records_pkey PRIMARY KEY (id),
+  CONSTRAINT registration_records_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(id)
+);
+CREATE TABLE public.repair_parts (
+  id bigint NOT NULL DEFAULT nextval('repair_parts_id_seq'::regclass),
+  repair_id bigint NOT NULL,
+  part_name text NOT NULL,
+  quantity integer DEFAULT 1,
+  unit_cost numeric DEFAULT 0,
+  CONSTRAINT repair_parts_pkey PRIMARY KEY (id),
+  CONSTRAINT repair_parts_repair_id_fkey FOREIGN KEY (repair_id) REFERENCES public.repair_records(id)
+);
+CREATE TABLE public.repair_records (
+  id bigint NOT NULL DEFAULT nextval('repair_records_id_seq'::regclass),
+  vehicle_id bigint NOT NULL,
+  reported_by uuid,
+  issue text NOT NULL,
+  repair_done text DEFAULT ''::text,
+  status text DEFAULT 'Pending'::text CHECK (status = ANY (ARRAY['Pending'::text, 'In Progress'::text, 'Completed'::text])),
+  shop_name text DEFAULT ''::text,
+  repair_cost numeric DEFAULT 0,
+  date_reported date NOT NULL,
+  date_resolved date,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT repair_records_pkey PRIMARY KEY (id),
+  CONSTRAINT repair_records_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(id),
+  CONSTRAINT repair_records_reported_by_fkey FOREIGN KEY (reported_by) REFERENCES auth.users(id)
+);
+CREATE TABLE public.safety_checks (
+  id bigint NOT NULL DEFAULT nextval('safety_checks_id_seq'::regclass),
+  vehicle_id bigint NOT NULL,
+  checked_by uuid,
+  check_date date,
   next_due_date date,
-  result        text default 'Pending' check (result in ('Passed','Failed','Pending')),
-  notes         text default '',
-  document_url  text,
-  created_at    timestamptz default now()
+  result text DEFAULT 'Pending'::text CHECK (result = ANY (ARRAY['Passed'::text, 'Failed'::text, 'Pending'::text])),
+  notes text DEFAULT ''::text,
+  document_url text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT safety_checks_pkey PRIMARY KEY (id),
+  CONSTRAINT safety_checks_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(id),
+  CONSTRAINT safety_checks_checked_by_fkey FOREIGN KEY (checked_by) REFERENCES auth.users(id)
 );
-
-
--- ================================================================
--- STEP 10: ROW LEVEL SECURITY (RLS)
--- ================================================================
-
-alter table employee_profiles    enable row level security;
-alter table fleets               enable row level security;
-alter table vehicles             enable row level security;
-alter table vehicle_bookings     enable row level security;
-alter table repair_records       enable row level security;
-alter table repair_parts         enable row level security;
-alter table suppliers            enable row level security;
-alter table spare_parts          enable row level security;
-alter table fuel_records         enable row level security;
-alter table trip_logs            enable row level security;
-alter table driver_profiles      enable row level security;
-alter table driver_violations    enable row level security;
-alter table dispatch_records     enable row level security;
-alter table maintenance_costs    enable row level security;
-alter table vehicle_depreciation enable row level security;
-alter table insurance_records    enable row level security;
-alter table registration_records enable row level security;
-alter table safety_checks        enable row level security;
-
-
--- Helper function: check if current user is admin
-create or replace function is_admin()
-returns boolean as $$
-  select exists (
-    select 1 from employee_profiles
-    where user_id = auth.uid() and role = 'admin'
-  );
-$$ language sql security definer;
-
-
--- ── EMPLOYEE PROFILES ──
-create policy "Users read own profile"
-  on employee_profiles for select
-  using (user_id = auth.uid());
-
-create policy "Admins full access to profiles"
-  on employee_profiles for all
-  using (is_admin());
-
--- ── VEHICLES ──
-create policy "Anyone authenticated can read vehicles"
-  on vehicles for select
-  using (auth.uid() is not null);
-
-create policy "Admins manage vehicles"
-  on vehicles for all
-  using (is_admin());
-
--- ── FLEETS ──
-create policy "Anyone authenticated can read fleets"
-  on fleets for select
-  using (auth.uid() is not null);
-
-create policy "Admins manage fleets"
-  on fleets for all
-  using (is_admin());
-
--- ── BOOKINGS ──
-create policy "Users see own bookings"
-  on vehicle_bookings for select
-  using (user_id = auth.uid());
-
-create policy "Users create own bookings"
-  on vehicle_bookings for insert
-  with check (user_id = auth.uid());
-
-create policy "Admins manage all bookings"
-  on vehicle_bookings for all
-  using (is_admin());
-
--- ── ALL OTHER TABLES: Admins only ──
-create policy "Admins manage repairs"        on repair_records       for all using (is_admin());
-create policy "Admins manage repair parts"   on repair_parts         for all using (is_admin());
-create policy "Admins manage suppliers"      on suppliers            for all using (is_admin());
-create policy "Admins manage spare parts"    on spare_parts          for all using (is_admin());
-create policy "Admins manage fuel"           on fuel_records         for all using (is_admin());
-create policy "Admins manage trips"          on trip_logs            for all using (is_admin());
-create policy "Admins manage drivers"        on driver_profiles      for all using (is_admin());
-create policy "Admins manage violations"     on driver_violations    for all using (is_admin());
-create policy "Admins manage dispatch"       on dispatch_records     for all using (is_admin());
-create policy "Admins manage costs"          on maintenance_costs    for all using (is_admin());
-create policy "Admins manage depreciation"   on vehicle_depreciation for all using (is_admin());
-create policy "Admins manage insurance"      on insurance_records    for all using (is_admin());
-create policy "Admins manage registration"   on registration_records for all using (is_admin());
-create policy "Admins manage safety checks"  on safety_checks        for all using (is_admin());
-
-
--- ================================================================
--- STEP 11: AUTO-CREATE EMPLOYEE PROFILE ON SIGNUP
--- ================================================================
-create or replace function handle_new_user()
-returns trigger as $$
-begin
-  insert into employee_profiles (user_id, role)
-  values (new.id, 'user');
-  return new;
-end;
-$$ language plpgsql security definer;
-
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute procedure handle_new_user();
-Bryle Jan
-insert into storage.buckets (id, name, public)
-values ('vehicle-images', 'vehicle-images', true)
-on conflict do nothing;
-
-create policy "Anyone can view vehicle images"
-  on storage.objects for select
-  using (bucket_id = 'vehicle-images');
-
-create policy "Admins can upload vehicle images"
-  on storage.objects for insert
-  with check (bucket_id = 'vehicle-images' and is_admin());
-
-create policy "Admins can delete vehicle images"
-  on storage.objects for delete
-  using (bucket_id = 'vehicle-images' and is_admin());
+CREATE TABLE public.spare_parts (
+  id bigint NOT NULL DEFAULT nextval('spare_parts_id_seq'::regclass),
+  name text NOT NULL,
+  part_number text DEFAULT ''::text,
+  supplier_id bigint,
+  quantity integer DEFAULT 0,
+  unit_cost numeric DEFAULT 0,
+  reorder_level integer DEFAULT 5,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT spare_parts_pkey PRIMARY KEY (id),
+  CONSTRAINT spare_parts_supplier_id_fkey FOREIGN KEY (supplier_id) REFERENCES public.suppliers(id)
+);
+CREATE TABLE public.suppliers (
+  id bigint NOT NULL DEFAULT nextval('suppliers_id_seq'::regclass),
+  name text NOT NULL,
+  contact text DEFAULT ''::text,
+  address text DEFAULT ''::text,
+  email text DEFAULT ''::text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT suppliers_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.trip_logs (
+  id bigint NOT NULL DEFAULT nextval('trip_logs_id_seq'::regclass),
+  vehicle_id bigint NOT NULL,
+  driver_id uuid,
+  origin text DEFAULT ''::text,
+  destination text DEFAULT ''::text,
+  purpose text DEFAULT ''::text,
+  status text DEFAULT 'Scheduled'::text CHECK (status = ANY (ARRAY['Scheduled'::text, 'Ongoing'::text, 'Completed'::text, 'Cancelled'::text])),
+  start_datetime timestamp with time zone,
+  end_datetime timestamp with time zone,
+  odometer_start double precision,
+  odometer_end double precision,
+  distance_km double precision DEFAULT 
+CASE
+    WHEN ((odometer_end IS NOT NULL) AND (odometer_start IS NOT NULL)) THEN (odometer_end - odometer_start)
+    ELSE NULL::double precision
+END,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT trip_logs_pkey PRIMARY KEY (id),
+  CONSTRAINT trip_logs_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(id),
+  CONSTRAINT trip_logs_driver_id_fkey FOREIGN KEY (driver_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.vehicle_bookings (
+  id bigint NOT NULL DEFAULT nextval('vehicle_bookings_id_seq'::regclass),
+  vehicle_id bigint NOT NULL,
+  user_id uuid NOT NULL,
+  purpose text DEFAULT ''::text,
+  destination text DEFAULT ''::text,
+  start_datetime timestamp with time zone NOT NULL,
+  end_datetime timestamp with time zone NOT NULL,
+  actual_return timestamp with time zone,
+  status text DEFAULT 'Pending'::text CHECK (status = ANY (ARRAY['Pending'::text, 'Approved'::text, 'Rejected'::text, 'Ongoing'::text, 'Returned'::text])),
+  admin_notes text DEFAULT ''::text,
+  created_at timestamp with time zone DEFAULT now(),
+  email text,
+  CONSTRAINT vehicle_bookings_pkey PRIMARY KEY (id),
+  CONSTRAINT vehicle_bookings_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(id),
+  CONSTRAINT vehicle_bookings_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.vehicle_change_logs (
+  id bigint NOT NULL DEFAULT nextval('vehicle_change_logs_id_seq'::regclass),
+  created_at timestamp with time zone DEFAULT now(),
+  action_type text,
+  vehicle_id uuid,
+  vehicle_name text,
+  changed_by text,
+  old_data jsonb,
+  new_data jsonb,
+  CONSTRAINT vehicle_change_logs_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.vehicle_depreciation (
+  id bigint NOT NULL DEFAULT nextval('vehicle_depreciation_id_seq'::regclass),
+  vehicle_id bigint NOT NULL UNIQUE,
+  purchase_price numeric DEFAULT 0,
+  purchase_date date,
+  useful_life_years integer DEFAULT 10,
+  residual_value numeric DEFAULT 0,
+  current_value numeric,
+  depreciation_method text DEFAULT 'Straight-line'::text,
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT vehicle_depreciation_pkey PRIMARY KEY (id),
+  CONSTRAINT vehicle_depreciation_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(id)
+);
+CREATE TABLE public.vehicles (
+  id bigint NOT NULL DEFAULT nextval('vehicles_id_seq'::regclass),
+  fleet_id bigint,
+  name text NOT NULL,
+  plate_number text NOT NULL UNIQUE,
+  model text DEFAULT ''::text,
+  year integer,
+  fuel_type text DEFAULT 'Diesel'::text CHECK (fuel_type = ANY (ARRAY['Gasoline'::text, 'Diesel'::text, 'Electric'::text, 'Hybrid'::text])),
+  condition text DEFAULT 'Good'::text CHECK (condition = ANY (ARRAY['Good'::text, 'Fair'::text, 'Under Repair'::text, 'Out of Service'::text])),
+  is_available boolean DEFAULT true,
+  image_url text,
+  odometer_km double precision DEFAULT 0,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT vehicles_pkey PRIMARY KEY (id),
+  CONSTRAINT vehicles_fleet_id_fkey FOREIGN KEY (fleet_id) REFERENCES public.fleets(id)
+);
