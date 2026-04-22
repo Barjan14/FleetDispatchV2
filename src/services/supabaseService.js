@@ -54,7 +54,22 @@ export const vehicleBookingService = {
   async getAll() {
     const { data, error } = await supabase
       .from('vehicle_bookings')
-      .select('*, vehicles(name, plate_number, image_url)')
+      .select(`
+        id,
+        vehicle_id,
+        user_id,
+        purpose,
+        destination,
+        start_datetime,
+        end_datetime,
+        actual_return,
+        status,
+        admin_notes,
+        created_at,
+        email,
+        vehicles(id, name, plate_number, image_url),
+        auth.users(id, email)
+      `)
       .order('created_at', { ascending: false });
     if (error) throw error;
     return data;
@@ -63,7 +78,11 @@ export const vehicleBookingService = {
   async getById(id) {
     const { data, error } = await supabase
       .from('vehicle_bookings')
-      .select('*, vehicles(*)')
+      .select(`
+        *,
+        vehicles(*),
+        auth.users(id, email)
+      `)
       .eq('id', id)
       .single();
     if (error) throw error;

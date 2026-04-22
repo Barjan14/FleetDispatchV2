@@ -95,16 +95,23 @@ export default function AdminDashboard() {
       if (!session) {
         navigate('/admin-login');
         return;
-      }
-
-      const [vRes, uRes, fRes, bRes, cV, cU, cF, cB, cP, cO] = await Promise.all([
+      }      const [vRes, uRes, fRes, bRes, cV, cU, cF, cB, cP, cO] = await Promise.all([
         supabase.from('vehicles').select('*').order('name'),
         supabase.from('employee_profiles').select('*').order('created_at'),
-        supabase.from('fleets').select('*, vehicles(id)'),
-        supabase.from('vehicle_bookings').select(`
-          *,
-          vehicles ( id, name, plate_number ),
-          employee_profiles!vehicle_bookings_user_id_fkey ( employee_id )
+        supabase.from('fleets').select('*, vehicles(id)'),        supabase.from('vehicle_bookings').select(`
+          id,
+          vehicle_id,
+          user_id,
+          purpose,
+          destination,
+          start_datetime,
+          end_datetime,
+          actual_return,
+          status,
+          admin_notes,
+          created_at,
+          email,
+          vehicles ( id, name, plate_number )
         `).order('created_at', { ascending: false }),
         supabase.from('vehicles').select('*', { count: 'exact', head: true }),
         supabase.from('employee_profiles').select('*', { count: 'exact', head: true }),
@@ -115,8 +122,7 @@ export default function AdminDashboard() {
       ]);
 
       setVehicles(vRes.data || []);
-      
-      setUsers((uRes.data || []).map(usr => ({
+        setUsers((uRes.data || []).map(usr => ({
         id: usr.id,
         user_id: usr.user_id,
         username: usr.employee_id || '—',
@@ -128,13 +134,11 @@ export default function AdminDashboard() {
         },
       })));
 
-      setFleets((fRes.data || []).map(fl => ({ ...fl, vehicles: fl.vehicles || [] })));
-
-      setBookings((bRes.data || []).map(bk => ({
+      setFleets((fRes.data || []).map(fl => ({ ...fl, vehicles: fl.vehicles || [] })));      setBookings((bRes.data || []).map(bk => ({
         ...bk,
         user: {
-          username: bk.employee_profiles?.employee_id || 'Unknown',
-          profile: { employee_id: bk.employee_profiles?.employee_id || '' },
+          email: bk.email || 'Unknown',
+          username: bk.email?.split('@')[0] || 'Unknown',
         },
         vehicle: bk.vehicles || {}, 
       })));
