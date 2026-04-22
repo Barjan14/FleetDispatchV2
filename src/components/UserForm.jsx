@@ -1,23 +1,3 @@
-<<<<<<< HEAD
-import { useState } from 'react'
-import '../styles/UserForm.css'
-
-/* =========================
-   VEHICLES & OPTIONS
-   ========================= */
-const VEHICLES = [
-  { id: '', label: 'Select vehicle type' },
-  { id: 'Cargo Truck', label: 'Cargo Truck' },
-  { id: 'Delivery Van', label: 'Delivery Van' },
-  { id: 'Flatbed', label: 'Flatbed' },
-  { id: 'Refrigerated Van', label: 'Refrigerated Van' },
-  { id: 'Passenger Van', label: 'Passenger Van' },
-  { id: 'Sedan', label: 'Sedan' },
-]
-
-const PURPOSES = ['Official', 'Personal']
-const DEPARTMENTS = ['Administration', 'Finance', 'HR', 'IT', 'Operations', 'Logistics', 'Marketing', 'Sales', 'Other']
-=======
 import { useState, useEffect } from 'react'
 import '../styles/UserForm.css'
 import { supabase } from '../supabaseClient'
@@ -29,7 +9,6 @@ import { uploadImage, createPreviewUrl, revokePreviewUrl } from '../utils/imageU
 const DEPARTMENTS = ['Administration', 'Finance', 'HR', 'IT', 'Operations', 'Logistics', 'Marketing', 'Sales', 'Other']
 
 const PURPOSES = ['Official', 'Personal']
->>>>>>> Iyanu
 
 /* =========================
    ICONS
@@ -103,8 +82,6 @@ const UserIcon = () => (
 
 export default function DispatchForm() {
   const today = new Date().toISOString().split('T')[0]
-<<<<<<< HEAD
-=======
   const [authUser, setAuthUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -116,7 +93,6 @@ export default function DispatchForm() {
     }
     getUser()
   }, [])
->>>>>>> Iyanu
 
   const [step, setStep] = useState(1)
   const [form, setForm] = useState({
@@ -133,21 +109,14 @@ export default function DispatchForm() {
     purposeDetails: '',
     priority: 'Normal',
   })
-<<<<<<< HEAD
-
-=======
->>>>>>> Iyanu
   const [submitted, setSubmitted] = useState(false)
   const [showSummary, setShowSummary] = useState(false)
   const [status, setStatus] = useState('Pending')
   const [errors, setErrors] = useState({})
-<<<<<<< HEAD
-=======
   const [toastMsg, setToastMsg] = useState('')
   const [documentFile, setDocumentFile] = useState(null)
   const [documentPreview, setDocumentPreview] = useState('')
   const [uploading, setUploading] = useState(false)
->>>>>>> Iyanu
 
   const set = (key, val) => {
     setForm(f => ({ ...f, [key]: val }))
@@ -185,14 +154,6 @@ export default function DispatchForm() {
     if (!validateStep()) return
     setStep(s => s + 1)
   }
-<<<<<<< HEAD
-
-  function handleSubmit() {
-    if (!validateStep()) return
-    setStatus('Dispatched')
-    setSubmitted(true)
-    setShowSummary(true)
-=======
   function handleSubmit() {
     if (!validateStep()) return
     submitToSupabase()
@@ -262,7 +223,6 @@ export default function DispatchForm() {
     } catch (err) {
       setToastMsg(`Error: ${err.message}`)
     }
->>>>>>> Iyanu
   }
   function handleReset() {
     setForm({
@@ -286,27 +246,18 @@ export default function DispatchForm() {
     setStatus('Pending')
     setErrors({})
   }
-<<<<<<< HEAD
-
-=======
->>>>>>> Iyanu
   const steps = [
     { num: 1, label: 'Employee Info' },
     { num: 2, label: 'Schedule' },
     { num: 3, label: 'Destination & Purpose' },
   ]
 
-<<<<<<< HEAD
-=======
   if (loading) return <div className="fd-page"><div className="fd-container-modern">Loading...</div></div>
 
->>>>>>> Iyanu
   return (
     <div className="fd-page">
       <div className="fd-container-modern">
         
-<<<<<<< HEAD
-=======
         {toastMsg && <div style={{
           position: 'fixed', top: '20px', right: '20px', 
           background: toastMsg.includes('Error') ? '#ef4444' : '#10b981',
@@ -315,7 +266,6 @@ export default function DispatchForm() {
           {toastMsg}
         </div>}
         
->>>>>>> Iyanu
         {/* HEADER */}
         <header className="fd-header-modern">
           <div className="fd-header-left">
@@ -577,13 +527,7 @@ export default function DispatchForm() {
                       <option>Urgent</option>
                       <option>Scheduled</option>
                     </select>
-<<<<<<< HEAD
-                  </div>
-
-                  <div className="fd-field full">
-=======
                   </div>                  <div className="fd-field full">
->>>>>>> Iyanu
                     <label>Purpose Details (Optional)</label>
                     <textarea 
                       value={form.purposeDetails}
@@ -592,8 +536,6 @@ export default function DispatchForm() {
                       rows={3}
                     />
                   </div>
-<<<<<<< HEAD
-=======
 
                   <div className="fd-field full">
                     <label>Upload Document or Image (Optional)</label>
@@ -646,7 +588,6 @@ export default function DispatchForm() {
                       </div>
                     </div>
                   </div>
->>>>>>> Iyanu
                 </div>
               </div>
             )}
@@ -678,17 +619,6 @@ export default function DispatchForm() {
                   Next
                   <ArrowRightIcon />
                 </button>
-<<<<<<< HEAD
-              )}
-
-              {step === 3 && (
-                <button 
-                  className="fd-btn fd-btn-primary"
-                  disabled={!canSubmit}
-                  onClick={handleSubmit}
-                >
-                  Submit Request
-=======
               )}              {step === 3 && (
                 <button 
                   className="fd-btn fd-btn-primary"
@@ -696,7 +626,6 @@ export default function DispatchForm() {
                   onClick={handleSubmit}
                 >
                   {uploading ? 'Uploading...' : 'Submit Request'}
->>>>>>> Iyanu
                   <CheckIcon />
                 </button>
               )}
