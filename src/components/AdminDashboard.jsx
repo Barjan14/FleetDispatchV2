@@ -39,14 +39,12 @@ const NAV = [
 export default function AdminDashboard() {
   const navigate = useNavigate();
   
-  // UI State
   const [tab, setTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState({ msg: '', type: '' });
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [vehicleSort, setVehicleSort] = useState('name_asc');
 
-  // Data State
   const [adminUser, setAdminUser] = useState({});
   const [stats, setStats] = useState({});
   const [vehicles, setVehicles] = useState([]);
@@ -54,40 +52,28 @@ export default function AdminDashboard() {
   const [drivers, setDrivers] = useState([]);
   const [fleets, setFleets] = useState([]);
   const [bookings, setBookings] = useState([]);
+  const [ongoingBookings, setOngoingBookings] = useState([]);
   const [vehicleLogs, setVehicleLogs] = useState([]);
   const [logsLoading, setLogsLoading] = useState(false);
 
-  // Modal State
   const [modalType, setModalType] = useState('');
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   
-  // Form State
   const [vForm, setVForm] = useState({ 
-    name: '', 
-    plate_number: '', 
-    model: '', 
-    year: '', 
-    fuel_type: 'Diesel',
-    condition: 'Good', 
-    odometer_km: 0,
-    is_available: true,
-    fleet_id: '',
-    image_url: '' 
+    name: '', plate_number: '', model: '', year: '', 
+    fuel_type: 'Diesel', condition: 'Good', odometer_km: 0,
+    is_available: true, fleet_id: '', image_url: '' 
   });
   const [uForm, setUForm] = useState({
-    username: '', 
-    is_staff: false,
-    profile: { employee_id: '', department: '', phone: '' }
+    username: '', is_staff: false, profile: { employee_id: '', department: '', phone: '' }
   });
 
-  // ── Helper: Show Toast ──────────────────────────────────────
   const showToast = (msg, type = 'ok') => {
     setToast({ msg, type });
     setTimeout(() => setToast({ msg: '', type: '' }), 3000);
   };
 
-  // ── Auth Guard ────────────────────────────────────────────
   useEffect(() => {
     const isAdmin = localStorage.getItem('isAdmin') === 'true';
     if (!isAdmin) {
@@ -98,7 +84,6 @@ export default function AdminDashboard() {
     if (stored) setAdminUser(JSON.parse(stored));
   }, [navigate]);
 
-  // ── Data Fetching ──────────────────────────────────────────
   const fetchAll = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -106,30 +91,21 @@ export default function AdminDashboard() {
         navigate('/admin-login');
         return;
       }      
-      
-      // ✅ FIX APPLIED HERE: Added dRes to match the 5th query
+
       const [vRes, uRes, fRes, bRes, dRes, cV, cU, cF, cB, cP, cO] = await Promise.all([
         supabase.from('vehicles').select('*').order('name'),
         supabase.from('employee_profiles').select('*').order('created_at'),
         supabase.from('fleets').select('*, vehicles(id)'),        
-        supabase.from('vehicle_bookings').select(`
-          id,
-          vehicle_id,
-          user_id,
-          purpose,
-          destination,
-          start_datetime,
-          end_datetime,
-          actual_return,
-          status,
-          admin_notes,
-          created_at,
-          email,
-          driver_id,
-          vehicles ( id, name, plate_number ),
-          driver_profiles ( id, name ) 
-        `).order('created_at', { ascending: false }),
-        supabase.from('driver_profiles').select('*').order('name'), // 5th Query -> dRes
+        supabase
+          .from('vehicle_bookings')
+          .select(`
+            *,
+            vehicle:vehicles ( id, name, fleet_id ),
+            driver:driver_profiles ( id, name ) 
+          `) // ✅ Supabase will now perfectly fetch the driver's name using driver_id!
+          .order('start_datetime', { ascending: false }),
+        supabase.from('driver_profiles').select('*').order('name'), 
+        
         supabase.from('vehicles').select('*', { count: 'exact', head: true }),
         supabase.from('employee_profiles').select('*', { count: 'exact', head: true }),
         supabase.from('fleets').select('*', { count: 'exact', head: true }),
@@ -139,7 +115,8 @@ export default function AdminDashboard() {
       ]);
       
       setVehicles(vRes.data || []);
-      setDrivers(dRes.data || []); // ✅ FIX APPLIED HERE: Save driver profiles
+      setDrivers(dRes.data || []); 
+      setBookings(bRes.data || []); 
 
       setUsers((uRes.data || []).map(usr => ({
         id: usr.id,
@@ -155,15 +132,11 @@ export default function AdminDashboard() {
 
       setFleets((fRes.data || []).map(fl => ({ ...fl, vehicles: fl.vehicles || [] })));      
       
-      setBookings((bRes.data || []).map(bk => ({
-        ...bk,
-        user: {
-          email: bk.email || 'Unknown',
-          username: bk.email?.split('@')[0] || 'Unknown',
-        },
-        vehicle: bk.vehicles || {}, 
-        driver: bk.driver_profiles || {}, // ✅ Added driver fallback
-      })));
+      setOngoingBookings(
+        (bRes.data || []).filter(
+          (b) => b.status === 'Approved' || b.status === 'Ongoing'
+        )
+      );
 
       setStats({
         totalVehicles: cV.count || 0,
@@ -194,7 +167,6 @@ export default function AdminDashboard() {
     }
   }, [tab, vehicleLogs.length]);
 
-  // ── Sorting ───────────────────────────────────────────────
   const sortedVehicles = useMemo(() => {
     const list = [...vehicles];
     switch (vehicleSort) {
@@ -215,13 +187,11 @@ export default function AdminDashboard() {
     showToast(`Sorted by: ${label}`, 'ok');
   };
 
-  // ── Vehicle CRUD ──────────────────────────────────────────
   const openAddVehicle = () => {
     setVForm({ 
       name: '', plate_number: '', model: '', year: '', 
       fuel_type: 'Diesel', condition: 'Good', odometer_km: 0,
-      is_available: true, fleet_id: '',
-      image_url: '' 
+      is_available: true, fleet_id: '', image_url: '' 
     });
     setModalType('addVehicle');
   };
@@ -234,66 +204,28 @@ export default function AdminDashboard() {
 
   const saveVehicle = async () => {
     const isEdit = modalType === 'editVehicle';
-
     const payload = { 
-      name: vForm.name, 
-      plate_number: vForm.plate_number, 
-      model: vForm.model, 
-      year: vForm.year ? parseInt(vForm.year) : null,
-      fuel_type: vForm.fuel_type,
-      condition: vForm.condition,
-      odometer_km: parseFloat(vForm.odometer_km) || 0,
-      is_available: vForm.is_available !== false,
-      fleet_id: vForm.fleet_id || null,
-      image_url: vForm.image_url
+      name: vForm.name, plate_number: vForm.plate_number, model: vForm.model, 
+      year: vForm.year ? parseInt(vForm.year) : null, fuel_type: vForm.fuel_type,
+      condition: vForm.condition, odometer_km: parseFloat(vForm.odometer_km) || 0,
+      is_available: vForm.is_available !== false, fleet_id: vForm.fleet_id || null, image_url: vForm.image_url
     };
 
     try {
       if (isEdit) {
-        const vehicleId = selectedVehicle?.id;
-
-        if (!vehicleId) {
-          showToast('No vehicle selected', 'err');
-          return;
-        }
-
-        await logVehicleUpdate(
-          selectedVehicle,
-          { ...selectedVehicle, ...payload },
-          adminUser.username || 'admin'
-        );
-
-        const { error } = await supabase
-          .from('vehicles')
-          .update(payload)
-          .eq('id', vehicleId);
-
+        if (!selectedVehicle?.id) return showToast('No vehicle selected', 'err');
+        await logVehicleUpdate(selectedVehicle, { ...selectedVehicle, ...payload }, adminUser.username || 'admin');
+        const { error } = await supabase.from('vehicles').update(payload).eq('id', selectedVehicle.id);
         if (error) throw error;
-
       } else {
-        const { data, error } = await supabase
-          .from('vehicles')
-          .insert(payload)
-          .select()
-          .single();
-
+        const { data, error } = await supabase.from('vehicles').insert(payload).select().single();
         if (error) throw error;
-
-        await logVehicleChange(
-          'create',
-          data.id,
-          data.name,
-          adminUser.username || 'admin'
-        );
+        await logVehicleChange('create', data.id, data.name, adminUser.username || 'admin');
       }
-
       showToast('Vehicle saved successfully');
       setModalType('');
       fetchAll();
-
-    } catch (err) {
-      showToast(err.message, 'err');
-    }
+    } catch (err) { showToast(err.message, 'err'); }
   };
 
   const handleDeleteVehicle = async (id) => {
@@ -304,24 +236,15 @@ export default function AdminDashboard() {
     }
   };
 
-  // ── User CRUD ─────────────────────────────────────────────
   const openEditUser = (u) => {
     setSelectedUser(u);
-    setUForm({
-      username: u.username,
-      is_staff: u.is_staff,
-      profile: u.profile
-    });
+    setUForm({ username: u.username, is_staff: u.is_staff, profile: u.profile });
     setModalType('editUser');
   };
 
   const openAddUser = () => {
     setSelectedUser(null);
-    setUForm({
-      username: '',
-      is_staff: false,
-      profile: { employee_id: '', department: '', phone: '' }
-    });
+    setUForm({ username: '', is_staff: false, profile: { employee_id: '', department: '', phone: '' } });
     setModalType('addUser');
   };
 
@@ -329,26 +252,18 @@ export default function AdminDashboard() {
     try {
       const isEdit = modalType === 'editUser';
       const payload = {
-        employee_id: uForm.profile.employee_id,
-        department: uForm.profile.department,
-        phone: uForm.profile.phone,
-        role: uForm.is_staff ? 'admin' : 'user'
+        employee_id: uForm.profile.employee_id, department: uForm.profile.department,
+        phone: uForm.profile.phone, role: uForm.is_staff ? 'admin' : 'user'
       };
-
       let error;
       if (isEdit) {
-        if (!selectedUser?.id) {
-          showToast('No user selected', 'err');
-          return;
-        }
-
+        if (!selectedUser?.id) return showToast('No user selected', 'err');
         const res = await supabase.from('employee_profiles').update(payload).eq('id', selectedUser.id);
         error = res.error;
       } else {
         const res = await supabase.from('employee_profiles').insert([payload]);
         error = res.error;
       }
-
       if (error) throw error;
       showToast(isEdit ? 'User updated' : 'User added');
       setModalType('');
@@ -357,12 +272,11 @@ export default function AdminDashboard() {
   };
 
   // ── Bookings ──────────────────────────────────────────────
-  // ✅ FIX APPLIED HERE: Added vehicleId and driverId parameters
   const bookingAction = async (id, status, vehicleId = null, driverId = null) => {
     const booking = bookings.find(x => x.id === id);
     const updates = { status };
     
-    // Save the assigned driver and vehicle when approving
+    // ✅ SAVES driver_id directly to vehicle_bookings table
     if (status === 'Approved') {
       if (vehicleId) updates.vehicle_id = vehicleId;
       if (driverId) updates.driver_id = driverId;
@@ -391,7 +305,7 @@ export default function AdminDashboard() {
           await supabase.from('vehicles').update({ is_available: false }).eq('id', booking.vehicle_id);
         }
         if (booking.driver_id) {
-          await supabase.from('driver_profiles').update({ availability: 'On Trip', assigned_vehicle_id: booking.vehicle_id || null }).eq('id', booking.driver_id);
+           await supabase.from('driver_profiles').update({ availability: 'On Trip', assigned_vehicle_id: booking.vehicle_id || null }).eq('id', booking.driver_id);
         }
       }
 
@@ -402,7 +316,6 @@ export default function AdminDashboard() {
     } catch (err) { showToast(err.message, 'err'); }
   };
 
-  // ── Logout ───────────────────────────────────────────────
   const logout = async () => {
     await supabase.auth.signOut();
     localStorage.clear();
@@ -471,8 +384,8 @@ export default function AdminDashboard() {
           <BookingsPage 
             bookings={bookings} 
             vehicles={vehicles} 
-            drivers={drivers} // ✅ FIX APPLIED HERE: Pass drivers to BookingsPage
-            onApprove={(id, vId, dId) => bookingAction(id, 'Approved', vId, dId)} // ✅ FIX APPLIED HERE: Update approval to take parameters
+            drivers={drivers} 
+            onApprove={(id, vId, dId) => bookingAction(id, 'Approved', vId, dId)} 
             onReject={(id) => bookingAction(id, 'Rejected')} 
             onMarkOngoing={(id) => bookingAction(id, 'Ongoing')} 
             onMarkReturned={(id) => bookingAction(id, 'Returned')} 
@@ -483,7 +396,9 @@ export default function AdminDashboard() {
           <DriversPage />
         )}
 
-        {tab === 'fleets' && <FleetsPage fleets={fleets} />}
+        {tab === 'fleets' && <FleetsPage
+          bookings={ongoingBookings}
+        />}
         
         {tab === 'logs' && (
           <VehicleLogsPage 
