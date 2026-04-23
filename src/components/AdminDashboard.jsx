@@ -393,7 +393,12 @@ export default function AdminDashboard() {
         )}
 
         {tab === 'drivers' && (
-          <DriversPage />
+          <DriversPage 
+            drivers={drivers}
+            fleets={fleets}
+            vehicles={vehicles}
+            onRefresh={fetchAll} // This tells DriversPage how to update the whole app
+          />
         )}
 
         {tab === 'fleets' && <FleetsPage
