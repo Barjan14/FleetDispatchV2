@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import DriverProfileFormModal from '../modals/DriverProfileFormModal';
-import { supabase } from '../supabaseClient'; 
+import { supabase } from "../../supabaseClient";
 
 export default function DriversPage({ 
   drivers = [], 
