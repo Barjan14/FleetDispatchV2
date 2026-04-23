@@ -23,11 +23,11 @@ export default function VehicleFormModal({ mode, data, onChange, onSave, onClose
       const preview = createPreviewUrl(file);
       setPreviewUrl(preview);
 
-    const { url } = await uploadImage(
-      file,
-      'vehicle-images',
-      `vehicles/temp`
-    );
+      const { url } = await uploadImage(
+        file,
+        'vehicle-images',
+        `vehicles/temp`
+      );
 
       onChange(prev => ({ ...prev, image_url: url }));
 
@@ -42,16 +42,14 @@ export default function VehicleFormModal({ mode, data, onChange, onSave, onClose
     }
   };
 
-return (
+  return (
     <div className="admin-overlay" onClick={onClose}>
-      {/* Added inline style to make the modal wider for 2 columns, adjust if you already have a class for this! */}
       <div className="admin-modal" style={{ maxWidth: '800px' }} onClick={e => e.stopPropagation()}>
         <div className="admin-modal-header">
           <h3>{isAdd ? 'Add Vehicle' : 'Edit Vehicle'}</h3>
           <button className="admin-btn admin-btn-outline admin-close" onClick={onClose} disabled={uploading}>✕</button>
         </div>
         
-        {/* NEW: Split Body Container */}
         <div className="admin-modal-body admin-modal-body-split">
           
           {/* LEFT COLUMN: Image Upload */}
@@ -165,15 +163,16 @@ return (
                   placeholder="0"
                 />
               </div>
-              <div className="admin-form-group" style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: '10px' }}>
-                <label className="admin-checkbox" style={{ margin: 0 }}>
-                  <input 
-                    type="checkbox" 
-                    checked={data.is_available !== false} 
-                    onChange={e => onChange({...data, is_available: e.target.checked})}
-                  />
-                  <span>Available for Booking</span>
-                </label>
+              {/* ✅ Changed from a Checkbox to a explicit Status Dropdown */}
+              <div className="admin-form-group">
+                <label>Status</label>
+                <select 
+                  value={data.is_available !== false} 
+                  onChange={e => onChange({...data, is_available: e.target.value === 'true'})}
+                >
+                  <option value={true}>Available</option>
+                  <option value={false}>On Duty</option>
+                </select>
               </div>
             </div>
           </div>

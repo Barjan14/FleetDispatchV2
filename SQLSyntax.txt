@@ -21,7 +21,7 @@ CREATE TABLE public.dispatch_records (
 );
 CREATE TABLE public.driver_profiles (
   id bigint NOT NULL DEFAULT nextval('driver_profiles_id_seq'::regclass),
-  user_id uuid NOT NULL UNIQUE,
+  user_id uuid UNIQUE,
   license_number text DEFAULT ''::text,
   license_type text CHECK (license_type = ANY (ARRAY['A'::text, 'B'::text, 'C'::text, 'BE'::text, 'CE'::text])),
   license_expiry date,
@@ -35,6 +35,7 @@ CREATE TABLE public.driver_profiles (
   assigned_vehicle_id bigint,
   notes text DEFAULT ''::text,
   created_at timestamp with time zone DEFAULT now(),
+  name text,
   CONSTRAINT driver_profiles_pkey PRIMARY KEY (id),
   CONSTRAINT driver_profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
   CONSTRAINT driver_profiles_assigned_fleet_id_fkey FOREIGN KEY (assigned_fleet_id) REFERENCES public.fleets(id),
@@ -56,8 +57,6 @@ CREATE TABLE public.employee_profiles (
   id bigint NOT NULL DEFAULT nextval('employee_profiles_id_seq'::regclass),
   user_id uuid NOT NULL UNIQUE,
   employee_id text UNIQUE,
-  department text DEFAULT ''::text,
-  phone text DEFAULT ''::text,
   role text DEFAULT 'user'::text CHECK (role = ANY (ARRAY['user'::text, 'admin'::text])),
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT employee_profiles_pkey PRIMARY KEY (id),
@@ -113,6 +112,11 @@ CREATE TABLE public.maintenance_costs (
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT maintenance_costs_pkey PRIMARY KEY (id),
   CONSTRAINT maintenance_costs_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(id)
+);
+CREATE TABLE public.profiles (
+  id uuid NOT NULL,
+  email text,
+  CONSTRAINT profiles_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.registration_records (
   id bigint NOT NULL DEFAULT nextval('registration_records_id_seq'::regclass),
@@ -221,9 +225,11 @@ CREATE TABLE public.vehicle_bookings (
   admin_notes text DEFAULT ''::text,
   created_at timestamp with time zone DEFAULT now(),
   email text,
+  driver_id bigint,
   CONSTRAINT vehicle_bookings_pkey PRIMARY KEY (id),
   CONSTRAINT vehicle_bookings_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(id),
-  CONSTRAINT vehicle_bookings_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+  CONSTRAINT vehicle_bookings_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
+  CONSTRAINT vehicle_bookings_driver_id_fkey FOREIGN KEY (driver_id) REFERENCES public.driver_profiles(id)
 );
 CREATE TABLE public.vehicle_change_logs (
   id bigint NOT NULL DEFAULT nextval('vehicle_change_logs_id_seq'::regclass),
