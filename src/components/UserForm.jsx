@@ -64,6 +64,7 @@ export default function DispatchForm() {
     email: '',
     employeeName: '',
     department: '',
+    passengerCount: 1,
     requestDate: today,
     departureTime: '08:00',
     returnDate: '',
@@ -94,6 +95,7 @@ export default function DispatchForm() {
       if (!form.email)        newErrors.email        = 'Your email is required'
       if (!form.employeeName) newErrors.employeeName = 'Your name is required'
       if (!form.department)   newErrors.department   = 'Please select your department'
+      if (form.passengerCount < 1) newErrors.passengerCount = 'At least 1 passenger required';
     }
     if (step === 2) {
       if (!form.requestDate)    newErrors.requestDate    = 'Request date is required'
@@ -170,6 +172,7 @@ export default function DispatchForm() {
       const notesPayload = [
         `Employee: ${form.employeeName}`,
         `Department: ${form.department}`,
+        `Passengers: ${form.passengerCount} seater(s) needed`,
         `Priority: ${form.priority}`,
         form.purposeDetails ? `Details: ${form.purposeDetails}` : '',
         documentUrl ? `\nAttachment: ${documentUrl}` : '',
@@ -290,6 +293,7 @@ export default function DispatchForm() {
               <div className="fd-summary-item"><span className="fd-summary-label">Employee Name</span><span className="fd-summary-value">{form.employeeName}</span></div>
               <div className="fd-summary-item"><span className="fd-summary-label">Department</span><span className="fd-summary-value">{form.department}</span></div>
               <div className="fd-summary-item"><span className="fd-summary-label">Request Date</span><span className="fd-summary-value">{form.requestDate}</span></div>
+              <div className="fd-summary-item"><span className="fd-summary-label">Passengers</span><span className="fd-summary-value">{form.passengerCount}</span></div>
               <div className="fd-summary-item"><span className="fd-summary-label">Departure Time</span><span className="fd-summary-value">{form.departureTime}</span></div>
               <div className="fd-summary-item"><span className="fd-summary-label">Return Date</span><span className="fd-summary-value">{form.returnDate || '—'}</span></div>
               <div className="fd-summary-item"><span className="fd-summary-label">Return Time</span><span className="fd-summary-value">{form.returnTime || '—'}</span></div>
@@ -331,6 +335,18 @@ export default function DispatchForm() {
                       {DEPARTMENTS.map(d => <option key={d}>{d}</option>)}
                     </select>
                     {errors.department && <span className="fd-error">{errors.department}</span>}
+                  </div>
+                  <div className="fd-field">
+                    <label>No. of Passengers (Seaters Needed)</label>
+                    <input 
+                      type="number" 
+                      min="1" 
+                      max="50"
+                      value={form.passengerCount} 
+                      onChange={e => set('passengerCount', parseInt(e.target.value) || 1)} 
+                      className={errors.passengerCount ? 'error' : ''} 
+                    />
+                    {errors.passengerCount && <span className="fd-error">{errors.passengerCount}</span>}
                   </div>
                 </div>
               </div>
