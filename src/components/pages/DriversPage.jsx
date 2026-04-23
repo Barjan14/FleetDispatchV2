@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import DriverProfileFormModal from '../modals/DriverProfileFormModal';
-import { supabase } from "../../supabaseClient";
+import { supabase } from '../../supabaseClient'; 
 
 export default function DriversPage({ 
   drivers = [], 
@@ -26,7 +26,6 @@ export default function DriversPage({
     try {
       const cleanedData = { ...driverData };
       
-      // Convert empty strings to null for database compatibility
       const fieldsToNullify = [
         'assigned_fleet_id', 'assigned_vehicle_id', 
         'license_expiry', 'date_of_birth', 'contact_number',
@@ -39,7 +38,6 @@ export default function DriversPage({
         }
       });
 
-      // Cleanup unnecessary fields
       delete cleanedData.email;
       delete cleanedData.password;
 
@@ -53,8 +51,7 @@ export default function DriversPage({
       }
 
       if (error) throw error;
-
-      if (onRefresh) onRefresh(); // Refresh the main dashboard state
+      if (onRefresh) onRefresh();
       
       setShowModal(false);
       setSelectedDriver(null);
@@ -80,6 +77,7 @@ export default function DriversPage({
         </button>
       </div>
 
+      {/* FILTERS */}
       <div style={{ padding: '10px' }}>
         {['All', 'Available', 'On Trip', 'On Leave', 'Off Duty', 'Suspended'].map(status => (
           <button
@@ -93,6 +91,7 @@ export default function DriversPage({
         ))}
       </div>
 
+      {/* TABLE */}
       <div className="admin-table-scroll">
         <table className="admin-table">
           <thead>
@@ -105,7 +104,7 @@ export default function DriversPage({
               <th>Vehicle</th>
               <th>Fleet</th>
               <th>Active</th>
-              <th>Actions</th>
+              {/* REMOVED: <th>Actions</th> */}
             </tr>
           </thead>
           <tbody>
@@ -115,36 +114,38 @@ export default function DriversPage({
               </tr>
             ) : (
               filteredDrivers.map((driver) => {
+                // Find assigned vehicle and fleet names
                 const assignedVehicle = vehicles.find((v) => String(v.id) === String(driver.assigned_vehicle_id));
                 const assignedFleet = fleets.find((f) => String(f.id) === String(driver.assigned_fleet_id));
 
                 return (
-                  <tr key={driver.id}>
-                    <td className="admin-bold">{driver.name || '—'}</td>
-                    <td className="admin-muted">{driver.license_type || '—'}</td>
-                    <td className="admin-muted-sm">
-                      {driver.license_expiry ? new Date(driver.license_expiry).toLocaleDateString() : '—'}
-                    </td>
-                    <td className="admin-muted-sm">{driver.contact_number || '—'}</td>
-                    <td>
-                      <span className={`admin-badge ${
-                        driver.availability === 'Available' ? 'b-approved'
-                        : driver.availability === 'On Trip' ? 'b-ongoing'
-                        : driver.availability === 'Suspended' ? 'b-rejected'
-                        : 'b-pending'
-                      }`}>
-                        {driver.availability}
-                      </span>
-                    </td>
-                    <td className="admin-muted-sm">{assignedVehicle?.name || '—'}</td>
-                    <td className="admin-muted-sm">{assignedFleet?.name || '—'}</td>
-                    <td>{driver.is_active_driver ? '✓' : '✗'}</td>
-                    <td className="admin-actions">
-                      <button className="admin-btn admin-btn-warning" onClick={() => handleEditDriver(driver)}>
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
+              <tr 
+                key={driver.id} 
+                onClick={() => handleEditDriver(driver)}
+                style={{ cursor: 'pointer' }}
+                className="admin-table-row-hover"
+              >
+                <td className="admin-bold">{driver.name || '—'}</td>
+                <td className="admin-muted">{driver.license_type || '—'}</td>
+                <td className="admin-muted-sm">
+                  {driver.license_expiry ? new Date(driver.license_expiry).toLocaleDateString() : '—'}
+                </td>
+                <td className="admin-muted-sm">{driver.contact_number || '—'}</td>
+                <td>
+                  <span className={`admin-badge ${
+                    driver.availability === 'Available' ? 'b-approved'
+                    : driver.availability === 'On Trip' ? 'b-ongoing'
+                    : driver.availability === 'Suspended' ? 'b-rejected'
+                    : 'b-pending'
+                  }`}>
+                    {driver.availability}
+                  </span>
+                </td>
+                <td className="admin-muted-sm">{assignedVehicle?.name || '—'}</td>
+                <td className="admin-muted-sm">{assignedFleet?.name || '—'}</td>
+                <td>{driver.is_active_driver ? '✓' : '✗'}</td>
+                {/* REMOVED: <td className="admin-actions">...</td> */}
+              </tr>
                 );
               })
             )}
@@ -152,7 +153,7 @@ export default function DriversPage({
         </table>
       </div>
 
-      {/* ✅ MODAL PLACEMENT: Outside the table div to avoid CSS clipping */}
+      {/* MODAL */}
       {showModal && (
         <DriverProfileFormModal
           driver={selectedDriver}

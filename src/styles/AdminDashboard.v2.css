@@ -1390,3 +1390,13 @@ form {
   border-radius: 50%;
   background-color: currentColor;
 }
+
+.admin-table-row-hover:hover {
+  background-color: #f1f5f9 !important; /* Light grey highlight */
+  transition: background-color 0.2s ease;
+}
+
+/* Ensure text remains black on hover */
+.admin-table-row-hover:hover .admin-bold {
+  color: #000000;
+}

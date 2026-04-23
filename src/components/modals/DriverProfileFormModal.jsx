@@ -47,12 +47,18 @@ const DriverProfileFormModal = ({ driver, fleets, vehicles, onSave, onClose }) =
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content modal-large">
-        <div className="modal-header">
-          <h2>{driver ? 'Edit Driver Profile' : 'New Driver Profile'}</h2>
-          <button type="button" className="close-btn" onClick={onClose}>&times;</button>
-        </div>
+    <div 
+        className="modal-overlay" 
+        onClick={onClose} // ✅ Closes when clicking the background
+      >
+        <div 
+          className="modal-content modal-large" 
+          onClick={(e) => e.stopPropagation()} // ✅ Prevents closing when clicking inside the form
+        >
+          <div className="modal-header">
+            <h2>{driver ? 'Edit Driver Profile' : 'New Driver Profile'}</h2>
+            <button type="button" className="close-btn" onClick={onClose}>&times;</button>
+          </div>
 
         <form onSubmit={handleSubmit}>
           {/* PERSONAL INFORMATION */}
