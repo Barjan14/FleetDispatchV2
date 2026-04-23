@@ -75,8 +75,9 @@ export default function VehicleDetailsModal({ vehicle, onEdit, onDelete, onClose
                 </div>
                 <div className="admin-detail-item">
                   <span className="admin-muted-sm">Availability</span>
-                  <span className={`admin-badge ${vehicle.is_available ? 'b-approved' : 'b-rejected'}`}>
-                    {vehicle.is_available ? 'Available' : 'Unavailable'}
+                  {/* ✅ Changed b-rejected to b-ongoing */}
+                  <span className={`admin-badge ${vehicle.is_available ? 'b-approved' : 'b-ongoing'}`}>
+                    {vehicle.is_available ? 'Available' : 'On Duty'}
                   </span>
                 </div>
               </div>
