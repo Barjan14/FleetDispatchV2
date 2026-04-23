@@ -134,7 +134,7 @@ export default function AdminDashboard() {
       
       setOngoingBookings(
         (bRes.data || []).filter(
-          (b) => b.status === 'Approved' || b.status === 'Ongoing'
+          (b) => b.status === 'Ongoing'
         )
       );
 
