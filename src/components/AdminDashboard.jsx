@@ -8,6 +8,7 @@ import OverviewPage from './pages/OverviewPage';
 import VehiclesPage from './pages/VehiclesPage';
 import UsersPage from './pages/UsersPage';
 import BookingsPage from './pages/BookingsPage';
+import DriversPage from './pages/DriversPage';
 import FleetsPage from './pages/FleetsPage';
 import VehicleLogsPage from './pages/VehicleLogsPage';
 import FinancialPage from './pages/FinancialPage';
@@ -27,6 +28,7 @@ const NAV = [
   { key: 'vehicles', icon: '🚗', label: 'Vehicles' },
   { key: 'users',    icon: '👥', label: 'Users'    },
   { key: 'bookings', icon: '📅', label: 'Bookings' },
+  { key: 'drivers', icon: '🚛', label: 'Drivers' },
   { key: 'fleets',   icon: '🗂️', label: 'Fleets'   },
   { key: 'logs',     icon: '📋', label: 'Logs'     },
   { key: 'financial', icon: '💰', label: 'Financial Data' },
@@ -49,6 +51,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState({});
   const [vehicles, setVehicles] = useState([]);
   const [users, setUsers] = useState([]);
+  const [drivers, setDrivers] = useState([]);
   const [fleets, setFleets] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [vehicleLogs, setVehicleLogs] = useState([]);
@@ -58,6 +61,7 @@ export default function AdminDashboard() {
   const [modalType, setModalType] = useState('');
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
+  
   // Form State
   const [vForm, setVForm] = useState({ 
     name: '', 
@@ -69,7 +73,7 @@ export default function AdminDashboard() {
     odometer_km: 0,
     is_available: true,
     fleet_id: '',
-    image_url: '' // <-- ADD THIS
+    image_url: '' 
   });
   const [uForm, setUForm] = useState({
     username: '', 
@@ -101,10 +105,14 @@ export default function AdminDashboard() {
       if (!session) {
         navigate('/admin-login');
         return;
-      }      const [vRes, uRes, fRes, bRes, cV, cU, cF, cB, cP, cO] = await Promise.all([
+      }      
+      
+      // ✅ FIX APPLIED HERE: Added dRes to match the 5th query
+      const [vRes, uRes, fRes, bRes, dRes, cV, cU, cF, cB, cP, cO] = await Promise.all([
         supabase.from('vehicles').select('*').order('name'),
         supabase.from('employee_profiles').select('*').order('created_at'),
-        supabase.from('fleets').select('*, vehicles(id)'),        supabase.from('vehicle_bookings').select(`
+        supabase.from('fleets').select('*, vehicles(id)'),        
+        supabase.from('vehicle_bookings').select(`
           id,
           vehicle_id,
           user_id,
@@ -117,8 +125,11 @@ export default function AdminDashboard() {
           admin_notes,
           created_at,
           email,
-          vehicles ( id, name, plate_number )
+          driver_id,
+          vehicles ( id, name, plate_number ),
+          driver_profiles ( id, name ) 
         `).order('created_at', { ascending: false }),
+        supabase.from('driver_profiles').select('*').order('name'), // 5th Query -> dRes
         supabase.from('vehicles').select('*', { count: 'exact', head: true }),
         supabase.from('employee_profiles').select('*', { count: 'exact', head: true }),
         supabase.from('fleets').select('*', { count: 'exact', head: true }),
@@ -126,9 +137,11 @@ export default function AdminDashboard() {
         supabase.from('vehicle_bookings').select('*', { count: 'exact', head: true }).eq('status', 'Pending'),
         supabase.from('vehicle_bookings').select('*', { count: 'exact', head: true }).eq('status', 'Ongoing'),
       ]);
-
+      
       setVehicles(vRes.data || []);
-        setUsers((uRes.data || []).map(usr => ({
+      setDrivers(dRes.data || []); // ✅ FIX APPLIED HERE: Save driver profiles
+
+      setUsers((uRes.data || []).map(usr => ({
         id: usr.id,
         user_id: usr.user_id,
         username: usr.employee_id || '—',
@@ -140,13 +153,16 @@ export default function AdminDashboard() {
         },
       })));
 
-      setFleets((fRes.data || []).map(fl => ({ ...fl, vehicles: fl.vehicles || [] })));      setBookings((bRes.data || []).map(bk => ({
+      setFleets((fRes.data || []).map(fl => ({ ...fl, vehicles: fl.vehicles || [] })));      
+      
+      setBookings((bRes.data || []).map(bk => ({
         ...bk,
         user: {
           email: bk.email || 'Unknown',
           username: bk.email?.split('@')[0] || 'Unknown',
         },
         vehicle: bk.vehicles || {}, 
+        driver: bk.driver_profiles || {}, // ✅ Added driver fallback
       })));
 
       setStats({
@@ -168,6 +184,16 @@ export default function AdminDashboard() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
+  useEffect(() => {
+    if (tab === 'logs' && vehicleLogs.length === 0) {
+      setLogsLoading(true);
+      fetchVehicleChangeLogs()
+        .then(data => setVehicleLogs(data || []))
+        .catch(() => showToast('Failed to load logs', 'err'))
+        .finally(() => setLogsLoading(false));
+    }
+  }, [tab, vehicleLogs.length]);
+
   // ── Sorting ───────────────────────────────────────────────
   const sortedVehicles = useMemo(() => {
     const list = [...vehicles];
@@ -188,13 +214,14 @@ export default function AdminDashboard() {
     const label = { name_asc:'Name (A→Z)', name_desc:'Name (Z→A)', condition:'Condition', available:'Availability', newest:'Newest' }[next];
     showToast(`Sorted by: ${label}`, 'ok');
   };
+
   // ── Vehicle CRUD ──────────────────────────────────────────
   const openAddVehicle = () => {
     setVForm({ 
       name: '', plate_number: '', model: '', year: '', 
       fuel_type: 'Diesel', condition: 'Good', odometer_km: 0,
       is_available: true, fleet_id: '',
-      image_url: '' // <-- ADD THIS
+      image_url: '' 
     });
     setModalType('addVehicle');
   };
@@ -204,6 +231,7 @@ export default function AdminDashboard() {
     setSelectedVehicle(v);
     setModalType('editVehicle');
   };
+
   const saveVehicle = async () => {
     const isEdit = modalType === 'editVehicle';
 
@@ -267,6 +295,7 @@ export default function AdminDashboard() {
       showToast(err.message, 'err');
     }
   };
+
   const handleDeleteVehicle = async (id) => {
     if (window.confirm('Delete this vehicle?')) {
       const { error } = await supabase.from('vehicles').delete().eq('id', id);
@@ -286,34 +315,84 @@ export default function AdminDashboard() {
     setModalType('editUser');
   };
 
+  const openAddUser = () => {
+    setSelectedUser(null);
+    setUForm({
+      username: '',
+      is_staff: false,
+      profile: { employee_id: '', department: '', phone: '' }
+    });
+    setModalType('addUser');
+  };
+
   const saveUser = async () => {
     try {
-      const { error } = await supabase.from('employee_profiles').update({
+      const isEdit = modalType === 'editUser';
+      const payload = {
         employee_id: uForm.profile.employee_id,
         department: uForm.profile.department,
         phone: uForm.profile.phone,
         role: uForm.is_staff ? 'admin' : 'user'
-      }).eq('id', selectedUser.id);
-      
+      };
+
+      let error;
+      if (isEdit) {
+        if (!selectedUser?.id) {
+          showToast('No user selected', 'err');
+          return;
+        }
+
+        const res = await supabase.from('employee_profiles').update(payload).eq('id', selectedUser.id);
+        error = res.error;
+      } else {
+        const res = await supabase.from('employee_profiles').insert([payload]);
+        error = res.error;
+      }
+
       if (error) throw error;
-      showToast('User updated');
+      showToast(isEdit ? 'User updated' : 'User added');
       setModalType('');
       fetchAll();
     } catch (err) { showToast(err.message, 'err'); }
   };
 
   // ── Bookings ──────────────────────────────────────────────
-  const bookingAction = async (id, status) => {
+  // ✅ FIX APPLIED HERE: Added vehicleId and driverId parameters
+  const bookingAction = async (id, status, vehicleId = null, driverId = null) => {
     const booking = bookings.find(x => x.id === id);
     const updates = { status };
+    
+    // Save the assigned driver and vehicle when approving
+    if (status === 'Approved') {
+      if (vehicleId) updates.vehicle_id = vehicleId;
+      if (driverId) updates.driver_id = driverId;
+    }
     
     try {
       if (status === 'Returned') {
         updates.actual_return = new Date().toISOString();
-        await supabase.from('vehicles').update({ is_available: true }).eq('id', booking.vehicle_id);
+        if (booking.vehicle_id) {
+          await supabase.from('vehicles').update({ is_available: true }).eq('id', booking.vehicle_id);
+        }
+        if (booking.driver_id) {
+          await supabase.from('driver_profiles').update({ availability: 'Available', assigned_vehicle_id: null }).eq('id', booking.driver_id);
+        }
+      }
+      if (status === 'Approved') {
+        if (vehicleId) {
+          await supabase.from('vehicles').update({ is_available: false }).eq('id', vehicleId);
+        }
+        if (driverId) {
+          await supabase.from('driver_profiles').update({ availability: 'On Trip', assigned_vehicle_id: vehicleId || null }).eq('id', driverId);
+        }
       }
       if (status === 'Ongoing') {
-        await supabase.from('vehicles').update({ is_available: false }).eq('id', booking.vehicle_id);
+        if (booking.vehicle_id) {
+          await supabase.from('vehicles').update({ is_available: false }).eq('id', booking.vehicle_id);
+        }
+        if (booking.driver_id) {
+          await supabase.from('driver_profiles').update({ availability: 'On Trip', assigned_vehicle_id: booking.vehicle_id || null }).eq('id', booking.driver_id);
+        }
       }
 
       const { error } = await supabase.from('vehicle_bookings').update(updates).eq('id', id);
@@ -382,7 +461,7 @@ export default function AdminDashboard() {
         {tab === 'users' && (
           <UsersPage 
             users={users} 
-            onAdd={() => setModalType('addUser')} 
+            onAdd={openAddUser} 
             onEdit={openEditUser} 
             onDelete={(id) => { if(window.confirm('Delete user?')) supabase.from('employee_profiles').delete().eq('id', id).then(fetchAll); }} 
           />
@@ -391,11 +470,17 @@ export default function AdminDashboard() {
         {tab === 'bookings' && (
           <BookingsPage 
             bookings={bookings} 
-            onApprove={(id) => bookingAction(id, 'Approved')} 
+            vehicles={vehicles} 
+            drivers={drivers} // ✅ FIX APPLIED HERE: Pass drivers to BookingsPage
+            onApprove={(id, vId, dId) => bookingAction(id, 'Approved', vId, dId)} // ✅ FIX APPLIED HERE: Update approval to take parameters
             onReject={(id) => bookingAction(id, 'Rejected')} 
             onMarkOngoing={(id) => bookingAction(id, 'Ongoing')} 
             onMarkReturned={(id) => bookingAction(id, 'Returned')} 
           />
+        )}
+
+        {tab === 'drivers' && (
+          <DriversPage />
         )}
 
         {tab === 'fleets' && <FleetsPage fleets={fleets} />}
