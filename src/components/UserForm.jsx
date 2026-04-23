@@ -57,6 +57,8 @@ const UserIcon = () => (
 
 /* ── Main Component ── */
 export default function DispatchForm() {
+  const navigate = useNavigate();
+
   const today = new Date().toISOString().split('T')[0]
 
   const [step, setStep] = useState(1)
@@ -441,9 +443,19 @@ export default function DispatchForm() {
           <footer className="fd-footer-modern">
             <button className="fd-reset-circle" onClick={handleReset} title="Reset form">↺</button>
             <Link to="/" style={{ textDecoration: 'none' }}>
-              <button className="fd-btn fd-btn-ghost" onClick={() => setStep(s => Math.max(1, s - 1))}>
-                <ArrowLeftIcon /> Back
-              </button>
+            <button 
+              className="fd-btn fd-btn-ghost"
+              onClick={() => {
+                if (step > 1) {
+                  setStep(s => s - 1)   // go to previous step
+                } else {
+                  navigate('/')         // only go to login/home if step 1
+                }
+              }}
+            >
+              <ArrowLeftIcon />
+              Back
+            </button>
             </Link>
             <div className="fd-footer-actions">
               {step < 3 && (
