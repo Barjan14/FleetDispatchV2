@@ -1196,3 +1196,18 @@
     min-height: 150px;
   }
 }
+
+.admin-assignment-box {
+  background: #f8f9fa;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border-left: 3px solid #007bff;
+  font-size: 0.85rem;
+}
+.admin-badge-mini {
+  font-size: 0.7rem;
+  padding: 2px 5px;
+  margin-left: 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}

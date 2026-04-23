@@ -223,31 +223,27 @@ export const driverProfileService = {
     return data;
   },
 
-  async getByUserId(userId) {
+  // SIMPLE CREATE: No Auth, no email/password needed
+  async create(profileData) {
     const { data, error } = await supabase
       .from('driver_profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-    if (error && error.code !== 'PGRST116') throw error;
-    return data || null;
-  },
-
-  async create(profile) {
-    const { data, error } = await supabase
-      .from('driver_profiles')
-      .insert([profile])
+      .insert([profileData]) 
       .select();
+
     if (error) throw error;
     return data[0];
   },
 
-  async update(id, profile) {
+  async update(id, profileData) {
+    // Remove ID from the update payload to prevent PK errors
+    const { id: _id, ...updateData } = profileData;
+    
     const { data, error } = await supabase
       .from('driver_profiles')
-      .update(profile)
+      .update(updateData)
       .eq('id', id)
       .select();
+
     if (error) throw error;
     return data[0];
   }

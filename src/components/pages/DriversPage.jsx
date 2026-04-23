@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { driverProfileService, fleetService, vehicleService } from '../services/supabaseService';
-import DriverProfileFormModal from '../components/modals/DriverProfileFormModal';
-import './DriversPage.css';
+import { driverProfileService, fleetService, vehicleService } from '../../services/supabaseService';
+import DriverProfileFormModal from '../modals/DriverProfileFormModal';
 
 const DriversPage = () => {
   const [drivers, setDrivers] = useState([]);
@@ -20,7 +19,7 @@ const DriversPage = () => {
   const loadDrivers = async () => {
     try {
       const data = await driverProfileService.getAll();
-      setDrivers(data);
+      setDrivers(data || []);
     } catch (error) {
       console.error('Error loading drivers:', error);
     }
@@ -29,7 +28,7 @@ const DriversPage = () => {
   const loadFleets = async () => {
     try {
       const data = await fleetService.getAll();
-      setFleets(data);
+      setFleets(data || []);
     } catch (error) {
       console.error('Error loading fleets:', error);
     }
@@ -38,7 +37,7 @@ const DriversPage = () => {
   const loadVehicles = async () => {
     try {
       const data = await vehicleService.getAll();
-      setVehicles(data);
+      setVehicles(data || []);
     } catch (error) {
       console.error('Error loading vehicles:', error);
     }
@@ -56,73 +55,178 @@ const DriversPage = () => {
 
   const handleSaveDriver = async (driverData) => {
     try {
+      // --- DATA CLEANUP STEP (FIXES THE 400 ERROR) ---
+      // We create a copy and ensure empty strings are converted to NULL
+      // so the database doesn't reject them as "invalid format".
+      const cleanedData = { ...driverData };
+      
+      const fieldsToNullify = [
+        'assigned_fleet_id', 
+        'assigned_vehicle_id', 
+        'license_expiry', 
+        'date_of_birth',
+        'contact_number',
+        'emergency_contact',
+        'address',
+        'notes'
+      ];
+
+      fieldsToNullify.forEach(field => {
+        if (cleanedData[field] === '' || cleanedData[field] === undefined) {
+          cleanedData[field] = null;
+        }
+      });
+
+      // Remove any auth fields that might have leaked in from old state
+      delete cleanedData.email;
+      delete cleanedData.password;
+      // ----------------------------------------------
+
       if (selectedDriver) {
-        await driverProfileService.update(selectedDriver.id, driverData);
+        await driverProfileService.update(selectedDriver.id, cleanedData);
       } else {
-        await driverProfileService.create(driverData);
+        await driverProfileService.create(cleanedData);
       }
-      loadDrivers();
+
+      await loadDrivers();
       setShowModal(false);
+      setSelectedDriver(null);
     } catch (error) {
       console.error('Error saving driver:', error);
+      alert(`Save failed: ${error.message || 'Check browser console for details'}`);
     }
   };
 
-  const filteredDrivers = filterAvailability === 'All'
-    ? drivers
-    : drivers.filter(d => d.availability === filterAvailability);
+  const filteredDrivers =
+    filterAvailability === 'All'
+      ? drivers
+      : drivers.filter((d) => d.availability === filterAvailability);
 
   return (
-    <div className="drivers-container">
-      <div className="drivers-header">
-        <h1>Driver Profiles</h1>
-        <button className="btn-primary" onClick={handleAddDriver}>+ Add Driver</button>
+    <div className="admin-card">
+
+      {/* HEADER */}
+      <div className="admin-card-header">
+        <h3>
+          Driver Profiles
+          <span className="admin-count">{drivers.length}</span>
+        </h3>
+
+        <button
+          className="admin-btn admin-btn-primary"
+          onClick={handleAddDriver}
+        >
+          + Add Driver
+        </button>
       </div>
 
-      <div className="drivers-filters">
+      {/* FILTERS */}
+      <div style={{ padding: '10px' }}>
         {['All', 'Available', 'On Trip', 'On Leave', 'Off Duty', 'Suspended'].map(status => (
           <button
             key={status}
-            className={`filter-btn ${filterAvailability === status ? 'active' : ''}`}
+            className={`admin-btn ${
+              filterAvailability === status
+                ? 'admin-btn-primary'
+                : 'admin-btn-outline'
+            }`}
             onClick={() => setFilterAvailability(status)}
+            style={{ marginRight: '8px', marginBottom: '8px' }}
           >
             {status}
           </button>
         ))}
       </div>
 
-      <div className="drivers-table-container">
-        <table className="drivers-table">
+      {/* TABLE */}
+      <div className="admin-table-scroll">
+        <table className="admin-table">
           <thead>
             <tr>
               <th>Name</th>
               <th>License Type</th>
               <th>License Expiry</th>
               <th>Contact</th>
-              <th>Availability</th>
-              <th>Assigned Vehicle</th>
+              <th>Status</th>
+              <th>Vehicle</th>
               <th>Fleet</th>
               <th>Active</th>
               <th>Actions</th>
             </tr>
           </thead>
+
           <tbody>
-            {filteredDrivers.map(driver => {
-              const assignedVehicle = vehicles.find(v => v.id === driver.assigned_vehicle_id);
-              const assignedFleet = fleets.find(f => f.id === driver.assigned_fleet_id);
-              
+            {filteredDrivers.length === 0 && (
+              <tr>
+                <td colSpan={9} className="admin-empty">
+                  No drivers found.
+                </td>
+              </tr>
+            )}
+
+            {filteredDrivers.map((driver) => {
+              const assignedVehicle = vehicles.find(
+                (v) => v.id === driver.assigned_vehicle_id
+              );
+              const assignedFleet = fleets.find(
+                (f) => f.id === driver.assigned_fleet_id
+              );
+
               return (
                 <tr key={driver.id}>
-                  <td>{driver.contact_number || 'N/A'}</td>
-                  <td>{driver.license_type || 'N/A'}</td>
-                  <td>{driver.license_expiry ? new Date(driver.license_expiry).toLocaleDateString() : '-'}</td>
-                  <td>{driver.contact_number}</td>
-                  <td><span className={`status-badge ${driver.availability.toLowerCase().replace(' ', '-')}`}>{driver.availability}</span></td>
-                  <td>{assignedVehicle?.name || 'Unassigned'}</td>
-                  <td>{assignedFleet?.name || 'Unassigned'}</td>
-                  <td>{driver.is_active_driver ? '✓' : '✗'}</td>
+                  <td className="admin-bold">
+                    {driver.name || '—'}
+                  </td>
+
+                  <td className="admin-muted">
+                    {driver.license_type || '—'}
+                  </td>
+
+                  <td className="admin-muted-sm">
+                    {driver.license_expiry
+                      ? new Date(driver.license_expiry).toLocaleDateString()
+                      : '—'}
+                  </td>
+
+                  <td className="admin-muted-sm">
+                    {driver.contact_number || '—'}
+                  </td>
+
                   <td>
-                    <button className="btn-edit" onClick={() => handleEditDriver(driver)}>Edit</button>
+                    <span
+                      className={`admin-badge ${
+                        driver.availability === 'Available'
+                          ? 'b-approved'
+                          : driver.availability === 'On Trip'
+                          ? 'b-ongoing'
+                          : driver.availability === 'Suspended'
+                          ? 'b-rejected'
+                          : 'b-pending'
+                      }`}
+                    >
+                      {driver.availability}
+                    </span>
+                  </td>
+
+                  <td className="admin-muted-sm">
+                    {assignedVehicle?.name || '—'}
+                  </td>
+
+                  <td className="admin-muted-sm">
+                    {assignedFleet?.name || '—'}
+                  </td>
+
+                  <td>
+                    {driver.is_active_driver ? '✓' : '✗'}
+                  </td>
+
+                  <td className="admin-actions">
+                    <button
+                      className="admin-btn admin-btn-warning"
+                      onClick={() => handleEditDriver(driver)}
+                    >
+                      Edit
+                    </button>
                   </td>
                 </tr>
               );
@@ -131,13 +235,17 @@ const DriversPage = () => {
         </table>
       </div>
 
+      {/* MODAL */}
       {showModal && (
         <DriverProfileFormModal
           driver={selectedDriver}
           fleets={fleets}
           vehicles={vehicles}
           onSave={handleSaveDriver}
-          onClose={() => setShowModal(false)}
+          onClose={() => {
+            setShowModal(false);
+            setSelectedDriver(null);
+          }}
         />
       )}
     </div>
