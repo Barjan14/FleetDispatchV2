@@ -134,7 +134,7 @@ export default function AdminDashboard() {
       
       setOngoingBookings(
         (bRes.data || []).filter(
-          (b) => b.status === 'Approved' || b.status === 'Ongoing'
+          (b) => b.status === 'Ongoing'
         )
       );
 
@@ -393,7 +393,12 @@ export default function AdminDashboard() {
         )}
 
         {tab === 'drivers' && (
-          <DriversPage />
+          <DriversPage 
+            drivers={drivers}
+            fleets={fleets}
+            vehicles={vehicles}
+            onRefresh={fetchAll} // This tells DriversPage how to update the whole app
+          />
         )}
 
         {tab === 'fleets' && <FleetsPage

@@ -19,10 +19,8 @@ const DriverProfileFormModal = ({ driver, fleets, vehicles, onSave, onClose }) =
 
   useEffect(() => {
     if (driver) {
-      // If editing, fill the form with existing driver data
       setFormData({
         ...driver,
-        // Ensure IDs are strings for the <select> elements, or empty string if null
         assigned_fleet_id: driver.assigned_fleet_id || '',
         assigned_vehicle_id: driver.assigned_vehicle_id || ''
       });
@@ -31,11 +29,8 @@ const DriverProfileFormModal = ({ driver, fleets, vehicles, onSave, onClose }) =
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
     let finalValue = type === 'checkbox' ? checked : value;
 
-    // IMPORTANT: If the user selects "No Fleet" or "No Vehicle", 
-    // we send null to Supabase instead of an empty string.
     if ((name === 'assigned_fleet_id' || name === 'assigned_vehicle_id') && value === '') {
       finalValue = null;
     }
@@ -48,17 +43,22 @@ const DriverProfileFormModal = ({ driver, fleets, vehicles, onSave, onClose }) =
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // No more email/password checks needed!
     onSave(formData);
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content modal-large">
-        <div className="modal-header">
-          <h2>{driver ? 'Edit Driver Profile' : 'New Driver Profile'}</h2>
-          <button type="button" className="close-btn" onClick={onClose}>&times;</button>
-        </div>
+    <div 
+        className="modal-overlay" 
+        onClick={onClose} // ✅ Closes when clicking the background
+      >
+        <div 
+          className="modal-content modal-large" 
+          onClick={(e) => e.stopPropagation()} // ✅ Prevents closing when clicking inside the form
+        >
+          <div className="modal-header">
+            <h2>{driver ? 'Edit Driver Profile' : 'New Driver Profile'}</h2>
+            <button type="button" className="close-btn" onClick={onClose}>&times;</button>
+          </div>
 
         <form onSubmit={handleSubmit}>
           {/* PERSONAL INFORMATION */}
@@ -200,27 +200,29 @@ const DriverProfileFormModal = ({ driver, fleets, vehicles, onSave, onClose }) =
               </div>
             </div>
             
-            <div className="form-group">
-              <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                <input 
-                  type="checkbox" 
-                  name="is_active_driver" 
-                  checked={formData.is_active_driver} 
-                  onChange={handleChange} 
-                />
-                <span>Set as Active Driver</span>
-              </label>
-            </div>
-          </div>
+              {/* THE TOGGLE BUTTON */}
+                  <div className="form-group">
+                    <label>Employment Status</label>
+                    <div className="status-toggle-container">
+                      <button
+                        type="button"
+                        className={`toggle-status-btn ${formData.is_active_driver ? 'is-active' : 'is-inactive'}`}
+                        onClick={() => setFormData(prev => ({ ...prev, is_active_driver: !prev.is_active_driver }))}
+                      >
+                        <span className="status-dot"></span>
+                        {formData.is_active_driver ? 'Active Driver' : 'Inactive Driver'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
 
-          {/* NOTES */}
           <div className="form-group">
             <label>Notes</label>
             <textarea
               name="notes"
               value={formData.notes || ''}
               onChange={handleChange}
-              placeholder="Additional notes about the driver..."
+              placeholder="Additional notes..."
               rows={2}
             />
           </div>
