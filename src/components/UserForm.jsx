@@ -11,9 +11,9 @@ import { useState } from 'react'
 import '../styles/UserForm.css'
 import { supabase } from '../supabaseClient'
 import { uploadImage, createPreviewUrl, revokePreviewUrl } from '../utils/imageUpload'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
-const DEPARTMENTS = ['Administration', 'Finance', 'HR', 'IT', 'Operations', 'Logistics', 'Marketing', 'Sales', 'Other']
+const DEPARTMENTS = ['RD', 'ARDO', 'RPBDD', 'RECORDS', 'LEGAL', 'SPLIT UPTOWN', 'SPLIT DOWNTOWN', 'LTI/LTSP', 'SUPPLY', 'MOTOR POLE', 'COA', 'SPECIAL CONCERN', 'LD', 'IU', 'ARMIC', 'BUDGET/ACCOUNTING', 'CASHIER', 'FINANCE', 'GAD', 'DARAB',  'Other']
 const PURPOSES = ['Official', 'Personal']
 
 /* ── Icons ── */
@@ -58,6 +58,7 @@ const UserIcon = () => (
 /* ── Main Component ── */
 export default function DispatchForm() {
   const today = new Date().toISOString().split('T')[0]
+  const navigate = useNavigate()
 
   const [step, setStep] = useState(1)
   const [form, setForm] = useState({
@@ -114,33 +115,35 @@ export default function DispatchForm() {
   function handleNext()   { if (!validateStep()) return; setStep(s => s + 1) }
   function handleSubmit() { if (!validateStep()) return; submitToSupabase() }
 
+  // ── Back button: go home on step 1, previous step otherwise ──
+  function handleBack() {
+    if (step === 1) {
+      navigate('/')
+    } else {
+      setStep(s => s - 1)
+    }
+  }
+
   const submitToSupabase = async () => {
     try {
       setUploading(true)
 
-      // ── Get or create an anonymous session ──────────────────
-      // This satisfies the user_id NOT NULL FK without forcing
-      // the employee to create an account.
       let userId
       const { data: { session } } = await supabase.auth.getSession()
 
       if (session?.user) {
         userId = session.user.id
       } else {
-        // Sign in anonymously (requires Supabase anon sign-in enabled
-        // in Auth > Settings > "Allow anonymous sign-ins")
         const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously()
         if (anonError) throw new Error(`Auth failed: ${anonError.message}`)
         userId = anonData.user.id
       }
 
-      // ── Build datetimes ──────────────────────────────────────
       const startDt = new Date(`${form.requestDate}T${form.departureTime}`).toISOString()
       const endDt   = form.returnDate
         ? new Date(`${form.returnDate}T${form.returnTime || '17:00'}`).toISOString()
         : new Date(new Date(startDt).getTime() + 8 * 60 * 60 * 1000).toISOString()
 
-      // ── Upload document if provided ──────────────────────────
       let documentUrl = ''
       if (documentFile) {
         try {
@@ -152,8 +155,6 @@ export default function DispatchForm() {
         }
       }
 
-      // ── Get first available vehicle (required NOT NULL) ──────
-      // Admin will assign the real vehicle on approval.
       const { data: availableVehicles, error: vErr } = await supabase
         .from('vehicles')
         .select('id')
@@ -166,9 +167,6 @@ export default function DispatchForm() {
       }
       const vehicleId = availableVehicles[0].id
 
-      // ── Build admin_notes with ALL form fields ───────────────
-      // This is what BookingsPage displays to the admin so they
-      // can see everything the employee submitted.
       const notesPayload = [
         `Employee: ${form.employeeName}`,
         `Department: ${form.department}`,
@@ -178,11 +176,10 @@ export default function DispatchForm() {
         documentUrl ? `\nAttachment: ${documentUrl}` : '',
       ].filter(Boolean).join('\n')
 
-      // ── Insert booking ───────────────────────────────────────
       const { error } = await supabase.from('vehicle_bookings').insert({
         user_id:        userId,
         vehicle_id:     vehicleId,
-        email:          form.email,       // from form, not auth
+        email:          form.email,
         purpose:        form.purpose,
         destination:    form.destination,
         start_datetime: startDt,
@@ -305,7 +302,7 @@ export default function DispatchForm() {
             </div>
             <div className="fd-summary-actions">
               <button className="fd-btn fd-btn-outline" onClick={handleReset}>Fill Out Again</button>
-              <button className="fd-btn fd-btn-primary" onClick={() => window.location.href = '/'}>Close</button>
+              <button className="fd-btn fd-btn-primary" onClick={() => navigate('/')}>Close</button>
             </div>
           </div>
         )}
@@ -440,11 +437,12 @@ export default function DispatchForm() {
         {!showSummary && (
           <footer className="fd-footer-modern">
             <button className="fd-reset-circle" onClick={handleReset} title="Reset form">↺</button>
-            <Link to="/" style={{ textDecoration: 'none' }}>
-              <button className="fd-btn fd-btn-ghost" onClick={() => setStep(s => Math.max(1, s - 1))}>
-                <ArrowLeftIcon /> Back
-              </button>
-            </Link>
+
+            {/* ── Fixed Back button: home on step 1, prev step otherwise ── */}
+            <button className="fd-btn fd-btn-ghost" onClick={handleBack}>
+              <ArrowLeftIcon /> Back
+            </button>
+
             <div className="fd-footer-actions">
               {step < 3 && (
                 <button className="fd-btn fd-btn-primary" onClick={handleNext}>
