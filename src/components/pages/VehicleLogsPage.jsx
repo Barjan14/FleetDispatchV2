@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 
-export default function VehicleLogsPage({ logs, loading, tripLogs = [], drivers = [] }) {
-  // ✅ Changed default state to 'trip' instead of 'vehicle'
+export default function VehicleLogsPage({ logs, loading, tripLogs = [] }) {
   const [activeTab, setActiveTab] = useState('trip');
 
   if (loading) {
@@ -18,7 +17,6 @@ export default function VehicleLogsPage({ logs, loading, tripLogs = [], drivers 
   return (
     <div className="admin-card">
       <div className="admin-card-header">
-        {/* Dynamically replaces the header based on the active table */}
         <h3>
           {activeTab === 'trip' ? 'Trip & Booking Logs' : 'Vehicle Change Logs'}
           <span className="admin-count">
@@ -27,7 +25,6 @@ export default function VehicleLogsPage({ logs, loading, tripLogs = [], drivers 
         </h3>
 
         <div style={{ display: 'flex', gap: '8px' }}>
-          {/* ✅ Swapped button order so Trip Logs is first */}
           <button
             onClick={() => setActiveTab('trip')}
             className={`admin-btn ${activeTab === 'trip' ? 'admin-btn-primary' : 'admin-btn-outline'}`}
@@ -48,7 +45,7 @@ export default function VehicleLogsPage({ logs, loading, tripLogs = [], drivers 
 
       <div className="admin-table-scroll">
 
-        {/* ================= TRIP & BOOKING LOGS TABLE (Now First) ================= */}
+        {/* ================= TRIP & BOOKING LOGS TABLE ================= */}
         {activeTab === 'trip' && (
           <table className="admin-table">
             <thead>
@@ -56,6 +53,7 @@ export default function VehicleLogsPage({ logs, loading, tripLogs = [], drivers 
                 <th>ID</th>
                 <th>Vehicle</th>
                 <th>Driver</th>
+                <th>Origin</th>
                 <th>Destination</th>
                 <th>Purpose</th>
                 <th>Status</th>
@@ -69,75 +67,67 @@ export default function VehicleLogsPage({ logs, loading, tripLogs = [], drivers 
             <tbody>
               {tripLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="admin-empty">
+                  <td colSpan={11} className="admin-empty">
                     No trip logs yet.
                   </td>
                 </tr>
               ) : (
-                tripLogs.map(log => {
-                  // ✅ MAGIC FIX: Search the drivers list using BOTH user_id (UUID) and id (BigInt) 
-                  // to guarantee we find a match no matter how the database saved it!
-                  const matchedDriver = drivers.find(d => 
-                    d.user_id === log.driver_id || String(d.id) === String(log.driver_id)
-                  );
-                  
-                  const driverDisplayName = matchedDriver?.name || log.driver?.name || 'Unknown Driver';
+                tripLogs.map(log => (
+                  <tr key={log.id}>
+                    <td className="admin-muted-sm"><code>#{log.id}</code></td>
 
-                  return (
-                    <tr key={log.id}>
-                      <td className="admin-muted-sm"><code>#{log.id}</code></td>
+                    <td className="admin-bold">
+                      {log.vehicles?.name || log.vehicle?.name || log.vehicle_id || '—'}
+                    </td>
 
-                      <td className="admin-bold">
-                        {log.vehicles?.name || log.vehicle?.name || log.vehicle_id || '—'}
-                      </td>
+                    {/* ✅ MAGIC: Just grabbing the driver_name directly from the database row! */}
+                    <td className="admin-bold-sm" style={{ color: '#2563eb' }}>
+                      {log.driver_name || 'Unknown Driver'}
+                    </td>
 
-                      {/* ✅ Uses the perfectly matched driver name */}
-                      <td className="admin-bold-sm" style={{ color: '#2563eb' }}>
-                        {driverDisplayName}
-                      </td>
+                    <td className="admin-muted-sm">{log.origin || '—'}</td>
+                    
+                    <td className="admin-muted-sm">{log.destination || '—'}</td>
+                    
+                    <td className="admin-muted-sm" style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={log.purpose}>
+                      {log.purpose || '—'}
+                    </td>
 
-                      <td className="admin-muted-sm">{log.destination || '—'}</td>
-                      
-                      <td className="admin-muted-sm" style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={log.purpose}>
-                        {log.purpose || '—'}
-                      </td>
+                    <td>
+                      <span className={`admin-badge-mini ${
+                        log.status === 'Scheduled' ? 'b-pending' :
+                        log.status === 'Ongoing' ? 'b-ongoing' :
+                        log.status === 'Completed' ? 'b-approved' :
+                        log.status === 'Cancelled' ? 'b-rejected' :
+                        'b-pending'
+                      }`}>
+                        {log.status}
+                      </span>
+                    </td>
 
-                      <td>
-                        <span className={`admin-badge-mini ${
-                          log.status === 'Scheduled' ? 'b-pending' :
-                          log.status === 'Ongoing' ? 'b-ongoing' :
-                          log.status === 'Completed' ? 'b-approved' :
-                          log.status === 'Cancelled' ? 'b-rejected' :
-                          'b-pending'
-                        }`}>
-                          {log.status}
-                        </span>
-                      </td>
+                    <td className="admin-muted-sm">
+                      {log.start_datetime ? new Date(log.start_datetime).toLocaleString() : '—'}
+                    </td>
 
-                      <td className="admin-muted-sm">
-                        {log.start_datetime ? new Date(log.start_datetime).toLocaleString() : '—'}
-                      </td>
+                    <td className="admin-muted-sm">
+                      {log.end_datetime ? new Date(log.end_datetime).toLocaleString() : '—'}
+                    </td>
 
-                      <td className="admin-muted-sm">
-                        {log.end_datetime ? new Date(log.end_datetime).toLocaleString() : '—'}
-                      </td>
+                    <td className="admin-muted-sm">
+                      {log.distance_km != null ? `${Number(log.distance_km).toFixed(2)} km` : '—'}
+                    </td>
 
-                      <td className="admin-muted-sm">
-                        {log.distance_km != null ? `${Number(log.distance_km).toFixed(2)} km` : '—'}
-                      </td>
-
-                      <td className="admin-muted-sm">
-                        {log.created_at ? new Date(log.created_at).toLocaleString() : '—'}
-                      </td>
-                    </tr>
-                  )
-                })
+                    <td className="admin-muted-sm">
+                      {log.created_at ? new Date(log.created_at).toLocaleString() : '—'}
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
         )}
 
-        {/* ================= VEHICLE LOGS TABLE (Now Second) ================= */}
+        {/* ================= VEHICLE LOGS TABLE ================= */}
         {activeTab === 'vehicle' && (
           <table className="admin-table">
             <thead>

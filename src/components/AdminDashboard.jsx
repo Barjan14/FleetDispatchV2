@@ -190,51 +190,28 @@ export default function AdminDashboard() {
   }, [navigate]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
-useEffect(() => {
-    if (tab === 'logs') {
-      setLogsLoading(true);
-      Promise.all([
-        fetchVehicleChangeLogs().then(res => res.data),
-        supabase
-          .from('trip_logs')
-          .select(`
-            id,
-            vehicle_id,
-            driver_id,
-            origin,
-            destination,
-            purpose,
-            status,
-            start_datetime,
-            end_datetime,
-            distance_km,
-            created_at,
-            vehicles:vehicles(id, name)
-            /* ❌ Removed driver:driver_profiles(id, name) to prevent crash */
-          `)
-          .order('created_at', { ascending: false })
-      ])
-        .then(([vehicleRes, tripRes]) => {
-          setVehicleLogs(normalizeVehicleLogs(vehicleRes || []));
-          
-          // ✅ MAGIC FIX: Match the UUID from trip_logs to the user_id in your drivers state!
-          const enhancedTripLogs = (tripRes.data || []).map(trip => {
-            const matchedDriver = drivers.find(d => d.user_id === trip.driver_id);
-            return {
-              ...trip,
-              driver: { name: matchedDriver?.name || 'Unknown Driver' }
-            };
-          });
+    useEffect(() => {
+        if (tab === 'logs') {
+          setLogsLoading(true);
+          Promise.all([
+            fetchVehicleChangeLogs().then(res => res.data),
+            supabase
+              .from('trip_logs')
+              .select('*, vehicles(id, name)') // Automatically safely grabs all columns including origin, driver_id, and driver_name
+              .order('created_at', { ascending: false })
+          ])
+            .then(([vehicleRes, tripRes]) => {
+              setVehicleLogs(normalizeVehicleLogs(vehicleRes || []));
+              setTripLogs(tripRes.data || []); 
+            })
+            .catch((err) => {
+              console.error(err);
+              showToast('Failed to load logs', 'err');
+            })
+            .finally(() => setLogsLoading(false));
+        }
+      }, [tab]);
 
-          setTripLogs(enhancedTripLogs);
-        })
-        .catch((err) => {
-          console.error(err);
-          showToast('Failed to load logs', 'err');
-        })
-        .finally(() => setLogsLoading(false));
-    }
-  }, [tab, drivers]); // ✅ Added drivers to dependency array
 
   const sortedVehicles = useMemo(() => {
     const list = [...vehicles];
@@ -478,9 +455,14 @@ const bookingAction = async (id, status, vehicleId = null, driverId = null) => {
           />
         )}
 
-        {tab === 'fleets' && <FleetsPage
-          bookings={ongoingBookings}
-        />}
+        {tab === 'fleets' && (
+          <FleetsPage
+            bookings={ongoingBookings}
+            fleets={fleets}
+            vehicles={vehicles}
+            drivers={drivers} 
+          />
+        )}
         {tab === 'logs' && (
           <VehicleLogsPage 
             logs={vehicleLogs} 
