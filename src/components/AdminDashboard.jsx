@@ -35,6 +35,25 @@ const NAV = [
   { key: 'insurance', icon: '🛡️', label: 'Insurance Records' },
   { key: 'safety',    icon: '✅', label: 'Safety Checks' },
 ];
+const normalizeVehicleLogs = (logs) =>
+  (logs || []).map(log => {
+    const oldData = log.old_data || {};
+    const newData = log.new_data || {};
+
+    return {
+      id: log.id,
+      vehicle_name: log.vehicle_name,
+      change_type: log.action_type,
+      admin_id: log.changed_by,
+      created_at: log.created_at,
+
+      field_name:
+        Object.keys(newData).find(k => oldData[k] !== newData[k]) || '—',
+
+      old_value: JSON.stringify(oldData) || '—',
+      new_value: JSON.stringify(newData) || '—',
+    };
+  });
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -53,7 +72,16 @@ export default function AdminDashboard() {
   const [fleets, setFleets] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [ongoingBookings, setOngoingBookings] = useState([]);
+
+  const getDriverName = (booking) => {
+    if (!booking?.driver_id) return 'Unknown Driver';
+
+    const driver = drivers.find(d => d.id === booking.driver_id);
+    return driver?.name || 'Unknown Driver';
+  };
+
   const [vehicleLogs, setVehicleLogs] = useState([]);
+  const [tripLogs, setTripLogs] = useState([]);
   const [logsLoading, setLogsLoading] = useState(false);
 
   const [modalType, setModalType] = useState('');
@@ -90,7 +118,7 @@ export default function AdminDashboard() {
       if (!session) {
         navigate('/admin-login');
         return;
-      }      
+      }    
 
       const [vRes, uRes, fRes, bRes, dRes, cV, cU, cF, cB, cP, cO] = await Promise.all([
         supabase.from('vehicles').select('*').order('name'),
@@ -101,7 +129,13 @@ export default function AdminDashboard() {
           .select(`
             *,
             vehicle:vehicles ( id, name, fleet_id ),
-            driver:driver_profiles ( id, name ) 
+            driver:driver_profiles (
+              id,
+              user_id,
+              name,
+              availability,
+              assigned_vehicle_id
+            )
           `) // ✅ Supabase will now perfectly fetch the driver's name using driver_id!
           .order('start_datetime', { ascending: false }),
         supabase.from('driver_profiles').select('*').order('name'), 
@@ -156,16 +190,51 @@ export default function AdminDashboard() {
   }, [navigate]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
-
-  useEffect(() => {
-    if (tab === 'logs' && vehicleLogs.length === 0) {
+useEffect(() => {
+    if (tab === 'logs') {
       setLogsLoading(true);
-      fetchVehicleChangeLogs()
-        .then(data => setVehicleLogs(data || []))
-        .catch(() => showToast('Failed to load logs', 'err'))
+      Promise.all([
+        fetchVehicleChangeLogs().then(res => res.data),
+        supabase
+          .from('trip_logs')
+          .select(`
+            id,
+            vehicle_id,
+            driver_id,
+            origin,
+            destination,
+            purpose,
+            status,
+            start_datetime,
+            end_datetime,
+            distance_km,
+            created_at,
+            vehicles:vehicles(id, name)
+            /* ❌ Removed driver:driver_profiles(id, name) to prevent crash */
+          `)
+          .order('created_at', { ascending: false })
+      ])
+        .then(([vehicleRes, tripRes]) => {
+          setVehicleLogs(normalizeVehicleLogs(vehicleRes || []));
+          
+          // ✅ MAGIC FIX: Match the UUID from trip_logs to the user_id in your drivers state!
+          const enhancedTripLogs = (tripRes.data || []).map(trip => {
+            const matchedDriver = drivers.find(d => d.user_id === trip.driver_id);
+            return {
+              ...trip,
+              driver: { name: matchedDriver?.name || 'Unknown Driver' }
+            };
+          });
+
+          setTripLogs(enhancedTripLogs);
+        })
+        .catch((err) => {
+          console.error(err);
+          showToast('Failed to load logs', 'err');
+        })
         .finally(() => setLogsLoading(false));
     }
-  }, [tab, vehicleLogs.length]);
+  }, [tab, drivers]); // ✅ Added drivers to dependency array
 
   const sortedVehicles = useMemo(() => {
     const list = [...vehicles];
@@ -271,50 +340,58 @@ export default function AdminDashboard() {
     } catch (err) { showToast(err.message, 'err'); }
   };
 
-  // ── Bookings ──────────────────────────────────────────────
-  const bookingAction = async (id, status, vehicleId = null, driverId = null) => {
-    const booking = bookings.find(x => x.id === id);
-    const updates = { status };
-    
-    // ✅ SAVES driver_id directly to vehicle_bookings table
-    if (status === 'Approved') {
-      if (vehicleId) updates.vehicle_id = vehicleId;
-      if (driverId) updates.driver_id = driverId;
-    }
-    
-    try {
-      if (status === 'Returned') {
-        updates.actual_return = new Date().toISOString();
-        if (booking.vehicle_id) {
-          await supabase.from('vehicles').update({ is_available: true }).eq('id', booking.vehicle_id);
-        }
-        if (booking.driver_id) {
-          await supabase.from('driver_profiles').update({ availability: 'Available', assigned_vehicle_id: null }).eq('id', booking.driver_id);
-        }
-      }
-      if (status === 'Approved') {
-        if (vehicleId) {
-          await supabase.from('vehicles').update({ is_available: false }).eq('id', vehicleId);
-        }
-        if (driverId) {
-          await supabase.from('driver_profiles').update({ availability: 'On Trip', assigned_vehicle_id: vehicleId || null }).eq('id', driverId);
-        }
-      }
-      if (status === 'Ongoing') {
-        if (booking.vehicle_id) {
-          await supabase.from('vehicles').update({ is_available: false }).eq('id', booking.vehicle_id);
-        }
-        if (booking.driver_id) {
-           await supabase.from('driver_profiles').update({ availability: 'On Trip', assigned_vehicle_id: booking.vehicle_id || null }).eq('id', booking.driver_id);
-        }
-      }
+    // ── Bookings ──────────────────────────────────────────────
+const bookingAction = async (id, status, vehicleId = null, driverId = null) => {
+  const booking = bookings.find(x => x.id === id);
 
-      const { error } = await supabase.from('vehicle_bookings').update(updates).eq('id', id);
-      if (error) throw error;
-      showToast(`Booking ${status}`);
-      fetchAll();
-    } catch (err) { showToast(err.message, 'err'); }
-  };
+  const updates = { status };
+
+  if (!booking) return;
+
+  if (status === 'Approved') {
+    if (vehicleId) updates.vehicle_id = vehicleId;
+    if (driverId) updates.driver_id = driverId;
+
+    await supabase.from('vehicles')
+      .update({ is_available: false })
+      .eq('id', vehicleId);
+
+    await supabase.from('driver_profiles')
+      .update({ availability: 'On Trip', assigned_vehicle_id: vehicleId })
+      .eq('id', driverId);
+  }
+
+  if (status === 'Ongoing') {
+    await supabase.from('vehicles')
+      .update({ is_available: false })
+      .eq('id', booking.vehicle_id);
+  }
+
+  if (status === 'Returned') {
+    updates.actual_return = new Date().toISOString();
+
+    await supabase.from('vehicles')
+      .update({ is_available: true })
+      .eq('id', booking.vehicle_id);
+
+    await supabase.from('driver_profiles')
+      .update({ availability: 'Available', assigned_vehicle_id: null })
+      .eq('id', booking.driver_id);
+  }
+
+  const { error } = await supabase
+    .from('vehicle_bookings')
+    .update(updates)
+    .eq('id', id);
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  showToast(`Booking ${status}`);
+  fetchAll();
+};
 
   const logout = async () => {
     await supabase.auth.signOut();
@@ -404,12 +481,17 @@ export default function AdminDashboard() {
         {tab === 'fleets' && <FleetsPage
           bookings={ongoingBookings}
         />}
-        
         {tab === 'logs' && (
           <VehicleLogsPage 
             logs={vehicleLogs} 
             loading={logsLoading} 
-            onRefresh={() => fetchVehicleChangeLogs().then(setVehicleLogs)} 
+            tripLogs={tripLogs}
+            drivers={drivers} /* ✅ Pass drivers list here */
+            onRefresh={() =>
+              fetchVehicleChangeLogs().then(res =>
+                setVehicleLogs(normalizeVehicleLogs(res?.data || []))
+              )
+            }
           />
         )}
 
