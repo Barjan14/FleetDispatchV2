@@ -273,48 +273,68 @@ export default function AdminDashboard() {
 
   // ── Bookings ──────────────────────────────────────────────
   const bookingAction = async (id, status, vehicleId = null, driverId = null) => {
-    const booking = bookings.find(x => x.id === id);
-    const updates = { status };
-    
-    // ✅ SAVES driver_id directly to vehicle_bookings table
-    if (status === 'Approved') {
-      if (vehicleId) updates.vehicle_id = vehicleId;
-      if (driverId) updates.driver_id = driverId;
+  const booking = bookings.find(x => x.id === id);
+  const updates = { status };
+
+  if (status === 'Approved') {
+    if (vehicleId) updates.vehicle_id = vehicleId;
+    if (driverId) updates.driver_id = driverId;
+  }
+
+  try {
+    // 1. Update Vehicle/Driver Availability
+    if (status === 'Returned') {
+      updates.actual_return = new Date().toISOString();
+      if (booking.vehicle_id) {
+        await supabase.from('vehicles').update({ is_available: true }).eq('id', booking.vehicle_id);
+      }
+      if (booking.driver_id) {
+        await supabase.from('driver_profiles').update({ availability: 'Available', assigned_vehicle_id: null }).eq('id', booking.driver_id);
+      }
     }
     
-    try {
-      if (status === 'Returned') {
-        updates.actual_return = new Date().toISOString();
-        if (booking.vehicle_id) {
-          await supabase.from('vehicles').update({ is_available: true }).eq('id', booking.vehicle_id);
-        }
-        if (booking.driver_id) {
-          await supabase.from('driver_profiles').update({ availability: 'Available', assigned_vehicle_id: null }).eq('id', booking.driver_id);
-        }
-      }
-      if (status === 'Approved') {
-        if (vehicleId) {
-          await supabase.from('vehicles').update({ is_available: false }).eq('id', vehicleId);
-        }
-        if (driverId) {
-          await supabase.from('driver_profiles').update({ availability: 'On Trip', assigned_vehicle_id: vehicleId || null }).eq('id', driverId);
-        }
-      }
-      if (status === 'Ongoing') {
-        if (booking.vehicle_id) {
-          await supabase.from('vehicles').update({ is_available: false }).eq('id', booking.vehicle_id);
-        }
-        if (booking.driver_id) {
-           await supabase.from('driver_profiles').update({ availability: 'On Trip', assigned_vehicle_id: booking.vehicle_id || null }).eq('id', booking.driver_id);
-        }
-      }
+    if (status === 'Approved' || status === 'Ongoing') {
+      const vId = vehicleId || booking.vehicle_id;
+      const dId = driverId || booking.driver_id;
+      if (vId) await supabase.from('vehicles').update({ is_available: false }).eq('id', vId);
+      if (dId) await supabase.from('driver_profiles').update({ availability: 'On Trip', assigned_vehicle_id: vId || null }).eq('id', dId);
+    }
 
-      const { error } = await supabase.from('vehicle_bookings').update(updates).eq('id', id);
-      if (error) throw error;
-      showToast(`Booking ${status}`);
-      fetchAll();
-    } catch (err) { showToast(err.message, 'err'); }
-  };
+    // 2. Update the Booking Row
+    const { error } = await supabase.from('vehicle_bookings').update(updates).eq('id', id);
+    if (error) throw error;
+
+    // 3. TRIGGER THE EMAIL (This is the part that needs to be perfect)
+    if (status === 'Approved') {
+      const assignedVehicle = vehicles.find(v => String(v.id) === String(vehicleId));
+      const assignedDriver = drivers.find(d => String(d.id) === String(driverId));
+
+      console.log("Triggering email for:", booking.email || booking.user?.email);
+
+      // Use await here so we know if it fails
+      const { data, error: funcError } = await supabase.functions.invoke('send-approval-email', {
+        body: {
+          userEmail: booking.email || booking.user?.email, 
+          vehicleName: assignedVehicle?.name || 'Assigned Vehicle',
+          driverName: assignedDriver?.name || 'Assigned Driver',
+          destination: booking.destination || 'Your Destination',
+          startDate: booking.start_datetime
+        }
+      });
+
+      if (funcError) {
+        console.error("Edge Function Error:", funcError);
+        showToast("Booking approved, but email failed to send.", "err");
+      }
+    }
+
+    showToast(`Booking ${status}`);
+    fetchAll(); 
+  } catch (err) {
+    console.error("Action Error:", err);
+    showToast(err.message, 'err');
+  }
+};
 
   const logout = async () => {
     await supabase.auth.signOut();
