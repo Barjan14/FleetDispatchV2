@@ -71,8 +71,8 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
 
   const [tab, setTab]                   = useState('overview');
-  const [loading, setLoading]           = useState(true);   // only true on first load
-  const [isFetching, setIsFetching]     = useState(false);  // silent background refresh
+  const [loading, setLoading]           = useState(true);   
+  const [isFetching, setIsFetching]     = useState(false);  
   const [toast, setToast]               = useState({ msg: '', type: '' });
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [vehicleSort, setVehicleSort]   = useState('name_asc');
@@ -105,16 +105,13 @@ export default function AdminDashboard() {
     profile: { employee_id: '', department: '', phone: '' },
   });
 
-  // ── Ref: tracks whether first load has completed ──────────
   const initialLoadDone = useRef(false);
 
-  // ── Toast ─────────────────────────────────────────────────
   const showToast = (msg, type = 'ok') => {
     setToast({ msg, type });
     setTimeout(() => setToast({ msg: '', type: '' }), 3000);
   };
 
-  // ── Auth guard ────────────────────────────────────────────
   useEffect(() => {
     const isAdmin = localStorage.getItem('isAdmin') === 'true';
     if (!isAdmin) { navigate('/admin-login'); return; }
@@ -122,9 +119,6 @@ export default function AdminDashboard() {
     if (stored) setAdminUser(JSON.parse(stored));
   }, [navigate]);
 
-  // ── Fetch all data ────────────────────────────────────────
-  // First load  → full spinner via setLoading
-  // Subsequent  → silent background via setIsFetching (no page flicker)
   const fetchAll = useCallback(async () => {
     if (initialLoadDone.current) setIsFetching(true);
 
@@ -195,53 +189,55 @@ export default function AdminDashboard() {
     }
   }, [navigate]);
 
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  // ── Silent Auto-Reject & Refresh Monitor ──────────────────
+  // ── Bulletproof Auto-Reject & Silent Refresh Monitor ──────
   useEffect(() => {
-    // Set up a background timer to run every 60 seconds
     const monitorInterval = setInterval(async () => {
-      
-      // 1. Restore the silent auto-refresh to keep your data perfectly synced
-      fetchAll();
-
-      // 2. Find any Pending bookings where the departure time has passed
       const now = new Date();
+      
+      // 1. Identify expired bookings
       const expiredBookings = bookings.filter(b => 
         b.status === 'Pending' && new Date(b.start_datetime) <= now
       );
 
-      // 3. Auto-reject them and trigger the emails!
-      for (const booking of expiredBookings) {
-        try {
-          // Update the database to Rejected
-          await supabase.from('vehicle_bookings').update({ 
-            status: 'Rejected',
-            admin_notes: (booking.admin_notes ? booking.admin_notes + ' | ' : '') + '[System]: Auto-rejected because departure time passed.'
-          }).eq('id', booking.id);
+      if (expiredBookings.length > 0) {
+        for (const booking of expiredBookings) {
+          try {
+            // TRIGGER EMAIL FIRST
+            const { error: funcError } = await supabase.functions.invoke('send-approval-email', {
+              body: {
+                userEmail:   booking.email || booking.user?.email,
+                status:      'Rejected',
+                vehicleName: 'N/A',
+                driverName:  'N/A',
+                destination: booking.destination || 'Your Destination',
+                startDate:   formatDepartureTime(booking.start_datetime),
+              },
+            });
 
-          // Trigger your Email Edge Function
-          await supabase.functions.invoke('send-approval-email', {
-            body: {
-              userEmail:   booking.email || booking.user?.email,
-              status:      'Rejected',
-              vehicleName: 'N/A',
-              driverName:  'N/A',
-              destination: booking.destination || 'Your Destination',
-              startDate:   formatDepartureTime(booking.start_datetime),
-            },
-          });
-          
-          // Notify the admin visually
-          showToast(`System auto-rejected expired booking for ${booking.destination}`);
-        } catch (err) {
-          console.error('Auto-reject monitor error:', err);
+            if (funcError) console.error('Failed to send auto-reject email:', funcError);
+
+            // UPDATE DB SECOND
+            await supabase.from('vehicle_bookings').update({ 
+              status: 'Rejected',
+              admin_notes: (booking.admin_notes ? booking.admin_notes + ' | ' : '') + '[System]: Auto-rejected because departure time passed without approval.'
+            }).eq('id', booking.id);
+            
+            showToast(`System auto-rejected expired booking for ${booking.destination}`);
+          } catch (err) {
+            console.error('Auto-reject monitor error:', err);
+          }
         }
       }
-    }, 60000); // 60000ms = 1 minute
 
-    // Cleanup the timer if you navigate away
+      // ✅ RESTORED: Silent background refresh ensures perfectly synced data!
+      fetchAll();
+
+    }, 60000); // Checks every 60 seconds
+
     return () => clearInterval(monitorInterval);
-  }, [bookings, fetchAll]);
+  }, [bookings, fetchAll]); 
 
   // ── Silent log refresh ────────────────────────────────────
   const fetchLogsSilently = useCallback(async () => {
@@ -260,8 +256,6 @@ export default function AdminDashboard() {
     }
   }, []);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
-
   useEffect(() => {
     if (tab === 'logs') {
       setLogsLoading(true);
@@ -270,8 +264,6 @@ export default function AdminDashboard() {
   }, [tab, fetchLogsSilently]);
 
   // ── Realtime subscription ─────────────────────────────────
-  // Listens for any change to vehicle_bookings and silently refreshes
-  // New bookings appear automatically — no manual refresh needed
   useEffect(() => {
     const channel = supabase
       .channel('bookings-realtime')
@@ -361,7 +353,11 @@ export default function AdminDashboard() {
     if (!window.confirm('Delete this vehicle?')) return;
     const { error } = await supabase.from('vehicles').delete().eq('id', id);
     if (error) showToast(error.message, 'err');
-    else { showToast('Vehicle removed'); fetchAll(); }
+    else { 
+      showToast('Vehicle removed'); 
+      setModalType(''); 
+      fetchAll(); 
+    }
   };
 
   // ── User CRUD ─────────────────────────────────────────────
@@ -410,7 +406,6 @@ export default function AdminDashboard() {
     const updates = { status };
 
     try {
-      // 1. Update vehicle & driver availability
       if (status === 'Approved') {
         if (vehicleId) updates.vehicle_id = vehicleId;
         if (driverId)  updates.driver_id  = driverId;
@@ -435,16 +430,12 @@ export default function AdminDashboard() {
           .update({ availability: 'Available', assigned_vehicle_id: null }).eq('id', booking.driver_id);
       }
 
-      // 2. Update the booking row
       const { error } = await supabase.from('vehicle_bookings').update(updates).eq('id', id);
       if (error) throw error;
 
-      // 3. Send email notification (Approved or Rejected)
       if (status === 'Approved' || status === 'Rejected') {
         const assignedVehicle = vehicles.find(v => String(v.id) === String(vehicleId));
         const assignedDriver  = drivers.find(d => String(d.id) === String(driverId));
-
-        console.log(`Triggering ${status} email for:`, booking.email || booking.user?.email);
 
         const { error: funcError } = await supabase.functions.invoke('send-approval-email', {
           body: {
@@ -453,7 +444,6 @@ export default function AdminDashboard() {
             vehicleName: assignedVehicle?.name || 'N/A',
             driverName:  assignedDriver?.name  || 'N/A',
             destination: booking.destination   || 'Your Destination',
-            // ✅ MERGED: formatted departure time from doc 6
             startDate:   formatDepartureTime(booking.start_datetime),
           },
         });
@@ -481,14 +471,12 @@ export default function AdminDashboard() {
     navigate('/admin-login');
   };
 
-  // ── First load spinner ────────────────────────────────────
   if (loading) return (
     <div className="admin-loading">
       <div className="spinner">Loading System...</div>
     </div>
   );
 
-  // ── Render ────────────────────────────────────────────────
   return (
     <div className="admin-root">
       <aside className="admin-sidebar">
@@ -513,7 +501,6 @@ export default function AdminDashboard() {
         <div className="admin-topbar">
           <h1>{NAV.find(n => n.key === tab)?.label}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {/* Subtle sync indicator — no page flicker */}
             {isFetching && (
               <span style={{ fontSize: 12, color: '#94a3b8' }}>↻ Syncing...</span>
             )}
@@ -537,8 +524,6 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* All pages always mounted, hidden via display:none */}
-        {/* Prevents remounting/state reset on every fetchAll   */}
         <div style={{ display: tab === 'overview'  ? 'block' : 'none' }}>
           <OverviewPage
             stats={stats}
@@ -574,29 +559,29 @@ export default function AdminDashboard() {
           />
         </div>
 
-        {/* BookingsPage stays mounted — no reset on data refresh */}
         <div style={{ display: tab === 'bookings' ? 'block' : 'none' }}>
+          {/* ✅ Cleaned: onRefresh logic handled completely by AdminDashboard now */}
           <BookingsPage
             bookings={bookings}
             vehicles={vehicles}
             drivers={drivers}
             onApprove={(id, vId, dId) => bookingAction(id, 'Approved', vId, dId)}
             onReject={(id)            => bookingAction(id, 'Rejected')}
-            onRefresh={fetchAll}
             onViewDetails={(b) => { setSelectedBooking(b); setModalType('bookingDetails'); }}
           />
         </div>
 
         <div style={{ display: tab === 'drivers' ? 'block' : 'none' }}>
+          {/* ✅ Cleaned: onRefresh logic handled completely by AdminDashboard now */}
           <DriversPage
             drivers={drivers}
             fleets={fleets}
             vehicles={vehicles}
-            onRefresh={fetchAll}
           />
         </div>
 
         <div style={{ display: tab === 'fleets' ? 'block' : 'none' }}>
+          {/* ✅ Cleaned: onRefresh logic handled completely by AdminDashboard now */}
           <FleetsPage
             bookings={ongoingBookings}
             fleets={fleets}
@@ -604,7 +589,6 @@ export default function AdminDashboard() {
             drivers={drivers}
             onMarkOngoing={(id)  => bookingAction(id, 'Ongoing')}
             onMarkReturned={(id) => bookingAction(id, 'Returned')}
-            onRefresh={fetchAll}
           />
         </div>
 
@@ -613,7 +597,6 @@ export default function AdminDashboard() {
             logs={vehicleLogs}
             loading={logsLoading}
             tripLogs={tripLogs}
-            onRefresh={fetchLogsSilently}
           />
         </div>
 
@@ -643,6 +626,7 @@ export default function AdminDashboard() {
         <VehicleDetailsModal
           vehicle={selectedVehicle}
           onEdit={() => openEditVehicle(selectedVehicle)}
+          onDelete={handleDeleteVehicle}
           onClose={() => setModalType('')}
         />
       )}
