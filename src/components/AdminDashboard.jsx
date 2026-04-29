@@ -357,18 +357,19 @@ export default function AdminDashboard() {
       const { error } = await supabase.from('vehicle_bookings').update(updates).eq('id', id);
       if (error) throw error;
 
-      // 3. Send approval email (only when Approved)
-      if (status === 'Approved') {
+      // 3. Send Email Notification (Approved or Rejected)
+      if (status === 'Approved' || status === 'Rejected') {
         const assignedVehicle = vehicles.find(v => String(v.id) === String(vehicleId));
-        const assignedDriver  = drivers.find(d => String(d.id) === String(driverId));
+        const assignedDriver = drivers.find(d => String(d.id) === String(driverId));
 
-        console.log('Triggering approval email for:', booking.email || booking.user?.email);
+        console.log(`Triggering ${status} email for:`, booking.email || booking.user?.email);
 
         const { error: funcError } = await supabase.functions.invoke('send-approval-email', {
           body: {
             userEmail:   booking.email || booking.user?.email,
-            vehicleName: assignedVehicle?.name || 'Assigned Vehicle',
-            driverName:  assignedDriver?.name  || 'Assigned Driver',
+            status:      status, // This tells the Edge Function which template to use
+            vehicleName: assignedVehicle?.name || 'N/A',
+            driverName:  assignedDriver?.name  || 'N/A',
             destination: booking.destination   || 'Your Destination',
             startDate:   booking.start_datetime,
           },
@@ -376,8 +377,7 @@ export default function AdminDashboard() {
 
         if (funcError) {
           console.error('Edge Function Error:', funcError);
-          // Show warning but don't block — booking is already approved
-          showToast('Booking approved, but email failed to send.', 'err');
+          showToast(`Booking ${status}, but email failed to send.`, 'err');
           fetchAll();
           return;
         }
