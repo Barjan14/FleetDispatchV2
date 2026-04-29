@@ -452,11 +452,12 @@ export default function AdminDashboard() {
         {tab === 'insurance' && <InsurancePage />}
         {tab === 'safety' && <SafetyChecksPage />}
       </main>
-
+ 
       {/* Modals Section */}
       {modalType === 'bookingDetails' && (
         <BookingDetailsModal 
           booking={selectedBooking} 
+          vehicles={vehicles} /* ✅ ADD THIS LINE */
           onClose={() => { setModalType(''); setSelectedBooking(null); }} 
         />
       )}

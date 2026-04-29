@@ -1,27 +1,39 @@
 import React from 'react';
+import { extractRequesterInfo } from '../pages/BookingsPage';
 
-// Reusing the same sleek icons for consistency
 const Icons = {
   Close: () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <line x1="18" y1="6" x2="6" y2="18"></line>
       <line x1="6" y1="6" x2="18" y2="18"></line>
     </svg>
   ),
   User: () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
       <circle cx="12" cy="7" r="4"></circle>
     </svg>
   ),
+  Mail: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+      <polyline points="22,6 12,13 2,6"></polyline>
+    </svg>
+  ),
+  Briefcase: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+    </svg>
+  ),
   MapPin: () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
       <circle cx="12" cy="10" r="3"></circle>
     </svg>
   ),
   Calendar: () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
       <line x1="16" y1="2" x2="16" y2="6"></line>
       <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -29,25 +41,34 @@ const Icons = {
     </svg>
   ),
   Car: () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"></path>
       <circle cx="7" cy="17" r="2"></circle>
       <path d="M9 17h6"></path>
       <circle cx="17" cy="17" r="2"></circle>
     </svg>
   ),
+  FileText: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+      <polyline points="14 2 14 8 20 8"></polyline>
+      <line x1="16" y1="13" x2="8" y2="13"></line>
+      <line x1="16" y1="17" x2="8" y2="17"></line>
+      <polyline points="10 9 9 9 8 9"></polyline>
+    </svg>
+  )
 };
 
-function bookBadge(s) {
-  const map = { 
-    Pending: 'b-pending', 
-    Approved: 'b-approved', 
-    Rejected: 'b-rejected', 
-    Ongoing: 'b-ongoing', 
-    Returned: 'b-returned' 
-  };
-  return map[s] || '';
-}
+const getStatusStyle = (status) => {
+  const s = status?.toLowerCase();
+  if (s === 'approved' || s === 'ongoing' || s === 'returned' || s === 'completed') 
+    return { backgroundColor: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0' };
+  if (s === 'pending') 
+    return { backgroundColor: '#fffbeb', color: '#b45309', border: '1px solid #fde68a' };
+  if (s === 'rejected') 
+    return { backgroundColor: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' };
+  return { backgroundColor: '#f8fafc', color: '#64748b', border: '1px solid #cbd5e1' };
+};
 
 function formatLongDate(dateString) {
   if (!dateString) return '—';
@@ -55,121 +76,117 @@ function formatLongDate(dateString) {
   return new Date(dateString).toLocaleDateString('en-US', options);
 }
 
-// ✅ THIS IS THE LINE VITE WAS LOOKING FOR!
-export default function BookingDetailsModal({ booking, onClose }) {
+const DetailBox = ({ label, value, icon, fullWidth }) => (
+  <div style={{ 
+    padding: '16px', 
+    backgroundColor: '#f8fafc', 
+    border: '1px solid #e2e8f0', 
+    borderRadius: '12px', 
+    display: 'flex', 
+    flexDirection: 'column', 
+    gap: '8px',
+    gridColumn: fullWidth ? '1 / -1' : 'auto'
+  }}>
+    <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}>
+      {icon && icon} {label}
+    </span>
+    <span style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', lineHeight: '1.4' }}>
+      {value}
+    </span>
+  </div>
+);
+
+// ✅ NEW: Added `vehicles = []` prop to allow plate cross-referencing!
+export default function BookingDetailsModal({ booking, vehicles = [], onClose }) {
   if (!booking) return null;
 
+  // Uses the full vehicles array to hunt down the plate number
+  const reqInfo = extractRequesterInfo(booking, vehicles);
+
   return (
-    <div className="admin-overlay" onClick={onClose}>
-      <div className="admin-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+    <div className="admin-overlay" onClick={onClose} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(15, 23, 42, 0.65)' }}>
+      <div className="admin-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '750px', width: '100%', backgroundColor: '#fff', borderRadius: '16px', overflow: 'hidden', position: 'relative' }}>
         
-        {/* HEADER */}
-        <div className="admin-modal-header" style={{ padding: '20px 24px' }}>
-          <div>
-            <h3 style={{ fontSize: '18px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              Booking Request <span style={{ color: '#64748b', fontWeight: '500' }}>#{booking.id?.toString().slice(0, 8)}</span>
-            </h3>
+        <button 
+          onClick={onClose} 
+          style={{ 
+            position: 'absolute', top: '24px', right: '24px', padding: '8px', border: '1px solid #e2e8f0', 
+            borderRadius: '12px', backgroundColor: '#f8fafc', color: '#64748b', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10
+          }}
+        >
+          <Icons.Close />
+        </button>
+
+        <div style={{ padding: '32px 32px 24px 32px', borderBottom: '1px solid #f1f5f9' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', paddingRight: '48px' }}>
+            <div>
+              <h3 style={{ fontSize: '28px', fontWeight: '900', color: '#0f172a', margin: '0 0 8px 0', letterSpacing: '-0.02em' }}>
+                Booking Request
+              </h3>
+              <div style={{ fontSize: '15px', color: '#64748b', fontWeight: '600' }}>
+                Request ID: <span style={{ color: '#0f172a' }}>#{booking.id?.toString().slice(0, 8)}</span>
+              </div>
+            </div>
+            
+            <div style={{ 
+              ...getStatusStyle(booking.status),
+              padding: '8px 16px', 
+              borderRadius: '999px', 
+              fontSize: '14px', 
+              fontWeight: '800',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em'
+            }}>
+              {booking.status}
+            </div>
           </div>
-          <button className="admin-btn admin-btn-outline" onClick={onClose} style={{ padding: '6px', border: 'none' }}>
-            <Icons.Close />
-          </button>
         </div>
 
-        {/* BODY */}
-        <div className="admin-modal-body" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div style={{ padding: '32px 32px 48px 32px', display: 'flex', flexDirection: 'column', gap: '32px', maxHeight: '75vh', overflowY: 'auto' }}>
           
-          {/* Status Banner */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-            <span style={{ fontSize: '14px', fontWeight: '700', color: '#334155' }}>Current Status</span>
-            <span className={`admin-badge ${bookBadge(booking.status)}`} style={{ fontSize: '13px', padding: '6px 14px' }}>
-              {booking.status}
-            </span>
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <DetailBox fullWidth icon={<Icons.MapPin />} label="Destination" value={booking.destination || 'Not Specified'} />
+              <DetailBox fullWidth icon={<Icons.FileText />} label="Purpose of Trip" value={booking.purpose || 'Not Specified'} />
+              <DetailBox icon={<Icons.Calendar />} label="Departure Schedule" value={formatLongDate(booking.start_datetime)} />
+              <DetailBox icon={<Icons.Calendar />} label="Return Schedule" value={formatLongDate(booking.end_datetime)} />
+            </div>
           </div>
 
-          {/* Section 1: Requester Details */}
           <div>
-            <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <h4 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '900', color: '#0f172a', borderBottom: '2px solid #f1f5f9', paddingBottom: '8px' }}>
               Requester Information
             </h4>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: '#fff', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-              <div className="admin-detail-item">
-                <span className="admin-muted-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Icons.User /> Email Address</span>
-                <span className="admin-bold">{booking.email || booking.user?.email || 'Unknown User'}</span>
-              </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <DetailBox icon={<Icons.User />} label="Employee Name" value={reqInfo.name} />
+              <DetailBox icon={<Icons.Mail />} label="Email Address" value={reqInfo.email} />
+              <DetailBox fullWidth icon={<Icons.Briefcase />} label="Position / Department" value={reqInfo.dept} />
             </div>
           </div>
 
-          {/* Section 2: Trip Details */}
-          <div>
-            <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Trip Details
-            </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: '#fff', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-              
-              <div className="admin-detail-item">
-                <span className="admin-muted-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Icons.MapPin /> Destination</span>
-                <span className="admin-bold" style={{ fontSize: '15px' }}>{booking.destination || '—'}</span>
-              </div>
-
-              <div className="admin-detail-item">
-                <span className="admin-muted-sm">Purpose of Trip</span>
-                <span style={{ fontSize: '14px', color: '#334155', lineHeight: '1.5' }}>{booking.purpose || '—'}</span>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '8px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
-                <div className="admin-detail-item">
-                  <span className="admin-muted-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Icons.Calendar /> Departure Date</span>
-                  <span className="admin-bold" style={{ color: '#059669' }}>{formatLongDate(booking.start_datetime)}</span>
-                </div>
-                <div className="admin-detail-item">
-                  <span className="admin-muted-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Icons.Calendar /> Return Date</span>
-                  <span className="admin-bold" style={{ color: '#0f172a' }}>{formatLongDate(booking.end_datetime)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 3: Assignment Info (Only shows if assigned) */}
-          {(booking.vehicle || booking.driver) && (
+          {(booking.vehicle || booking.driver || booking.vehicle_id) && (
             <div>
-              <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <h4 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '900', color: '#0f172a', borderBottom: '2px solid #f1f5f9', paddingBottom: '8px' }}>
                 Dispatch Assignment
               </h4>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: '#fff', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <div className="admin-detail-item">
-                  <span className="admin-muted-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Icons.Car /> Assigned Vehicle</span>
-                  <span className="admin-bold">{booking.vehicle?.name || '—'}</span>
-                  <span className="admin-muted-sm" style={{ fontSize: '11px' }}>{booking.vehicle?.plate_number}</span>
-                </div>
-                <div className="admin-detail-item">
-                  <span className="admin-muted-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Icons.User /> Assigned Driver</span>
-                  <span className="admin-bold" style={{ color: '#2563eb' }}>{booking.driver?.name || '—'}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Section 4: Admin Notes */}
-          {booking.admin_notes && (
-            <div>
-              <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Admin Notes
-              </h4>
-              <div style={{ background: '#fef3c7', padding: '16px', borderRadius: '12px', border: '1px solid #fde68a', color: '#92400e', fontSize: '14px', lineHeight: '1.5' }}>
-                {booking.admin_notes}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <DetailBox 
+                  icon={<Icons.Car />} 
+                  label="Assigned Vehicle" 
+                  value={
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span>{booking.vehicle?.name || 'Assigned Vehicle'}</span>
+                      <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>Plate: {reqInfo.plate}</span>
+                    </div>
+                  } 
+                />
+                <DetailBox icon={<Icons.User />} label="Assigned Driver" value={booking.driver?.name || '—'} />
               </div>
             </div>
           )}
 
         </div>
-
-        {/* FOOTER */}
-        <div className="admin-modal-footer" style={{ padding: '16px 24px', background: '#f8fafc' }}>
-          <button className="admin-btn admin-btn-outline" onClick={onClose} style={{ width: '100px' }}>
-            Close
-          </button>
-        </div>
-
       </div>
     </div>
   );

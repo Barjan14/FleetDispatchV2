@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 
-// Clean, professional SVG icons
 const Icons = {
   Refresh: () => (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -28,6 +27,12 @@ const Icons = {
       <circle cx="12" cy="7" r="4" />
     </svg>
   ),
+  Briefcase: () => (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+    </svg>
+  ),
   Note: () => (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -39,23 +44,46 @@ const Icons = {
   )
 };
 
-// Helper to color-code statuses
 function bookBadge(s) {
-  const map = { 
-    Pending: 'b-pending', 
-    Approved: 'b-approved', 
-    Rejected: 'b-rejected', 
-    Ongoing: 'b-ongoing', 
-    Returned: 'b-returned' 
-  };
+  const map = { Pending: 'b-pending', Approved: 'b-approved', Rejected: 'b-rejected', Ongoing: 'b-ongoing', Returned: 'b-returned' };
   return map[s] || '';
 }
 
-// Helper to format dates cleanly
 function formatShortDate(dateString) {
   if (!dateString) return '—';
   const options = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
   return new Date(dateString).toLocaleDateString('en-US', options);
+}
+
+// ✅ NEW: Now accepts the full `vehicles` array to cross-reference the ID!
+export function extractRequesterInfo(booking, allVehicles = []) {
+  let name = booking.employee_name || booking.name || booking.user?.name || '';
+  let dept = booking.department || booking.position || booking.user?.profile?.department || booking.user?.department || '';
+  let email = booking.email || booking.user?.email || 'Not Provided';
+  let plate = booking.vehicle?.plate_number || '';
+
+  // Cross-reference the vehicle database if we only have an ID
+  if (!plate && booking.vehicle_id && allVehicles.length > 0) {
+    const foundCar = allVehicles.find(v => v.id === booking.vehicle_id);
+    if (foundCar) plate = foundCar.plate_number;
+  }
+
+  if (booking.admin_notes) {
+    const empMatch = booking.admin_notes.match(/Employee:\s*(.*?)(?=\s*(?:Dep:|Dept:|Department:|Plate:|Plate No:|$))/i);
+    const deptMatch = booking.admin_notes.match(/(?:Dep:|Dept:|Department:)\s*(.*?)(?=\s*(?:Plate:|Plate No:|$))/i);
+    const plateMatch = booking.admin_notes.match(/(?:Plate:|Plate No:)\s*(.*?)(?=\s*(?:Dep:|Dept:|Employee:|$))/i);
+    
+    if (empMatch && empMatch[1]) name = empMatch[1].trim();
+    if (deptMatch && deptMatch[1]) dept = deptMatch[1].trim();
+    if (plateMatch && plateMatch[1] && !plate) plate = plateMatch[1].trim();
+  }
+
+  return { 
+    name: name || 'Unknown User', 
+    dept: dept || 'Not Provided', 
+    email, 
+    plate: plate || 'N/A' 
+  };
 }
 
 export default function BookingsPage({
@@ -70,18 +98,10 @@ export default function BookingsPage({
   const [assignments, setAssignments] = useState({});
 
   const setAssignment = (bookingId, field, value) => {
-    setAssignments(prev => ({
-      ...prev,
-      [bookingId]: {
-        ...prev[bookingId],
-        [field]: value
-      }
-    }));
+    setAssignments(prev => ({ ...prev, [bookingId]: { ...prev[bookingId], [field]: value } }));
   };
 
-  const activeBookings = bookings.filter(b => 
-    b.status === 'Pending' || b.status === 'Approved' || b.status === 'Ongoing'
-  );
+  const activeBookings = bookings.filter(b => b.status === 'Pending' || b.status === 'Approved' || b.status === 'Ongoing');
 
   return (
     <div className="admin-card">
@@ -131,20 +151,29 @@ export default function BookingsPage({
               const selectedVehicle = assignments[b.id]?.vehicleId ?? b.vehicle_id ?? '';
               const selectedDriver = assignments[b.id]?.driverId ?? b.driver_id ?? '';
 
+              // ✅ Pass the `vehicles` array so it can look up the plate number!
+              const reqInfo = extractRequesterInfo(b, vehicles);
+
               return (
                 <tr 
                   key={b.id} 
                   style={{ cursor: 'pointer', transition: 'background-color 0.2s' }}
                   onClick={() => onViewDetails && onViewDetails(b)}
                 >
-                  
-                  {/* 1. REQUESTER */}
                   <td style={{ verticalAlign: 'middle' }}>
-                    <div className="admin-bold" style={{ color: '#4b5563' }}>#{b.id?.toString().slice(0, 6)}</div>
-                    <div className="admin-muted-sm" style={{ color: '#2563eb' }}>{b.email || b.user?.email || 'Unknown User'}</div>
+                    <div className="admin-bold" style={{ color: '#0f172a', fontSize: '14px' }}>
+                      {reqInfo.name}
+                    </div>
+                    <div className="admin-muted-sm" style={{ color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px', fontWeight: '600' }}>
+                      <Icons.Briefcase /> {reqInfo.dept}
+                    </div>
+                    {reqInfo.email !== 'Not Provided' && (
+                      <div className="admin-muted-sm" style={{ color: '#2563eb', marginTop: '2px' }}>
+                        {reqInfo.email}
+                      </div>
+                    )}
                   </td>
 
-                  {/* 2. TRIP DETAILS */}
                   <td style={{ verticalAlign: 'middle' }}>
                     <div className="admin-bold" style={{ maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '6px' }} title={b.destination}>
                       <Icons.MapPin /> {b.destination || '—'}
@@ -154,7 +183,6 @@ export default function BookingsPage({
                     </div>
                   </td>
 
-                  {/* 3. SCHEDULE */}
                   <td style={{ verticalAlign: 'middle' }}>
                     <div className="admin-bold-sm" style={{ color: '#059669' }}>
                       {formatShortDate(b.start_datetime)}
@@ -164,7 +192,6 @@ export default function BookingsPage({
                     </div>
                   </td>
 
-                  {/* 4. ASSIGNMENT */}
                   <td style={{ verticalAlign: 'middle' }}>
                     {b.status === 'Pending' ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -196,31 +223,24 @@ export default function BookingsPage({
                     ) : (
                       <div className="admin-muted-sm" style={{ lineHeight: '1.4' }}>
                           <div className="admin-bold-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Icons.Car /> {b.vehicle?.name || 'N/A'}
+                            <Icons.Car /> {b.vehicle?.name || 'Assigned'}
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                          <div style={{ fontSize: '11px', color: '#64748b', paddingLeft: '20px', marginTop: '2px' }}>
+                            Plate: {reqInfo.plate}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
                             <Icons.User /> {b.driver?.name || 'N/A'}
                           </div>
                       </div>
                     )}
                   </td>
 
-                  {/* 5. STATUS & NOTES */}
                   <td style={{ verticalAlign: 'middle' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
-                      <span className={`admin-badge ${bookBadge(b.status)}`} style={{ fontSize: '11px' }}>
-                        {b.status}
-                      </span>
-                      
-                      {b.admin_notes && (
-                        <div className="admin-muted-sm" style={{ maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '6px' }} title={b.admin_notes}>
-                          <Icons.Note /> {b.admin_notes}
-                        </div>
-                      )}
+                      <span className={`admin-badge ${bookBadge(b.status)}`} style={{ fontSize: '11px' }}>{b.status}</span>
                     </div>
                   </td>
 
-                  {/* 6. ACTIONS - ✅ Fixed: Removed className="admin-actions" from the <td> */}
                   <td style={{ verticalAlign: 'middle' }}>
                     {b.status === 'Pending' ? (
                       <div className="admin-actions" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
@@ -250,9 +270,7 @@ export default function BookingsPage({
                         </button>
                       </div>
                     ) : (
-                      <span className="admin-muted-sm" style={{ fontStyle: 'italic', color: '#9ca3af' }}>
-                        Managed in Fleets
-                      </span>
+                      <span className="admin-muted-sm" style={{ fontStyle: 'italic', color: '#9ca3af' }}>Managed in Fleets</span>
                     )}
                   </td>
                 </tr>
