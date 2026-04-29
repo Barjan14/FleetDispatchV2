@@ -1,5 +1,5 @@
 /* AdminDashboard.v2.css
-   Styles for current AdminDashboard.jsx markup (admin-* classNames).
+   Upgraded UI for Vehicles, Bookings, Fleets, Logs, and Modals
 */
 
 :root {
@@ -20,6 +20,12 @@
 }
 
 * { box-sizing: border-box; }
+
+/* ===== CUSTOM MODERN SCROLLBARS ===== */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
 
 .admin-root {
   min-height: 100vh;
@@ -77,16 +83,13 @@
   outline: 1px solid #fdd117;
 }
 
-/* Users tab: same highlight as other nav items */
 .admin-nav.admin-nav-users.active {
   background: #fdd117;
   color: #111827;
   outline: 1px solid #fdd117;
 }
 
-.admin-nav.admin-nav-users.active:hover {
-  background: #fdd117;
-}
+.admin-nav.admin-nav-users.active:hover { background: #fdd117; }
 
 .admin-icon {
   width: 28px;
@@ -126,9 +129,12 @@
   color: rgba(255,255,255,0.75);
 }
 
+/* ================= MAIN CONTENT ================= */
+
 .admin-main {
   flex: 1;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   min-height: 100vh;
 }
 
@@ -136,7 +142,6 @@
   position: sticky;
   top: 0;
   z-index: 100;
-
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -182,10 +187,7 @@
   background: #fff;
 }
 
-.admin-user-btn:focus-visible {
-  outline: none;
-  box-shadow: var(--ad-focus);
-}
+.admin-user-btn:focus-visible { outline: none; box-shadow: var(--ad-focus); }
 
 .admin-avatar {
   width: 32px;
@@ -225,6 +227,8 @@
 
 .admin-dropdown-item:hover { background: rgba(2,6,23,0.06); }
 
+/* ================= UTILITIES & TOASTS ================= */
+
 .admin-toast {
   position: fixed;
   right: 22px;
@@ -238,7 +242,6 @@
   max-width: min(420px, calc(100vw - 44px));
   font-weight: 600;
 }
-
 .admin-toast.success { border-left: 5px solid var(--ad-brand); }
 .admin-toast.error { border-left: 5px solid #b91c1c; }
 
@@ -284,16 +287,10 @@
   min-width: 0;
 }
 
-.admin-card.admin-card-compact {
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
 .admin-card-header {
   position: sticky;
   top: 0;
   z-index: 3;
-
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -326,6 +323,8 @@
   box-shadow: 0 2px 10px rgba(2, 6, 23, 0.10);
 }
 
+/* ================= TABLES ================= */
+
 .admin-table {
   width: 100%;
   border-collapse: collapse;
@@ -337,20 +336,10 @@
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   max-height: calc(100vh - 220px);
-  overflow: auto;
   min-width: 0;
   width: 100%;
-  max-width: 1200px;
 }
 
-/* Default scroll wrapper for long tables */
-.admin-card .admin-table-scroll {
-  max-height: calc(100vh - 220px);
-  overflow: auto;
-  min-width: 0;
-}
-
-/* Sticky headers */
 .admin-table thead th {
   position: sticky;
   top: 0;
@@ -368,26 +357,21 @@
   text-align: left;
   word-break: break-word;
   min-width: auto;
-  word-wrap: break-word;
   overflow-wrap: break-word;
 }
 
-.admin-empty {
-  text-align: center;
-  color: var(--ad-muted);
-  padding: 22px 16px;
-}
+/* ✅ Interactive Table Row Hover */
+.admin-table tbody tr { transition: background-color 0.2s ease; }
+.admin-table tbody tr:hover { background-color: #f8fafc; }
+
+.admin-empty { text-align: center; color: var(--ad-muted); padding: 22px 16px; }
 
 .admin-muted { color: var(--ad-muted); }
 .admin-muted-sm { color: var(--ad-muted); font-size: 12px; }
-.admin-bold { font-weight: 850; }
+.admin-bold { font-weight: 850; color: #111827; }
+.admin-bold-sm { font-weight: 700; font-size: 12px; color: #111827; }
 
-.admin-code {
-  background: rgba(2,6,23,0.06);
-  padding: 2px 8px;
-  border-radius: 8px;
-  font-size: 12px;
-}
+/* ================= BUTTONS & BADGES ================= */
 
 .admin-actions {
   display: flex;
@@ -411,55 +395,45 @@
   line-height: 1;
   white-space: nowrap;
   transition: transform 120ms ease, box-shadow 160ms ease, background 160ms ease;
+  color: var(--ad-text);
 }
 
 .admin-btn:hover { box-shadow: var(--ad-shadow-sm); transform: translateY(-0.5px); }
 .admin-btn:active { transform: translateY(0); }
 .admin-btn:focus-visible { outline: none; box-shadow: var(--ad-focus); }
 
-.admin-btn-primary {
-  background: linear-gradient(135deg, var(--ad-brand), var(--ad-brand-2));
-  border-color: rgba(0, 98, 5, 0.35);
-  color: #fff;
-}
-
+.admin-btn-primary { background: linear-gradient(135deg, var(--ad-brand), var(--ad-brand-2)); border-color: rgba(0, 98, 5, 0.35); color: #fff; }
 .admin-btn-outline { background: #fff; }
+.admin-btn-danger { background: #fff; border-color: rgba(185, 28, 28, 0.35); color: #b91c1c; }
+.admin-btn-success { background: #16a34a; border-color: #16a34a; color: #fff; }
+.admin-btn-warning { background: #f59e0b; border-color: #f59e0b; color: #111827; }
 
-.admin-btn-danger {
-  background: #fff;
-  border-color: rgba(185, 28, 28, 0.35);
-  color: #b91c1c;
+.admin-badge, .admin-badge-mini {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  border: 1px solid transparent;
 }
+.admin-badge-mini { font-size: 10px; padding: 2px 6px; text-transform: uppercase; }
 
-.admin-btn-success {
-  background: #16a34a;
-  border-color: #16a34a;
-  color: #fff;
-}
+.b-good, .b-approved { background: rgba(22, 163, 74, 0.12); color: #166534; border-color: rgba(22, 163, 74, 0.25); }
+.b-fair, .b-pending, .b-ongoing { background: rgba(245, 158, 11, 0.14); color: #92400e; border-color: rgba(245, 158, 11, 0.25); }
+.b-repair { background: rgba(59, 130, 246, 0.14); color: #1d4ed8; border-color: rgba(59, 130, 246, 0.25); }
+.b-out, .b-rejected { background: rgba(185, 28, 28, 0.12); color: #991b1b; border-color: rgba(185, 28, 28, 0.25); }
+.b-returned { background: rgba(100, 116, 139, 0.14); color: #334155; border-color: rgba(100, 116, 139, 0.25); }
 
-.admin-btn-warning {
-  background: #f59e0b;
-  border-color: #f59e0b;
-  color: #111827;
-}
-
-/* ===== Vehicles (card grid) ===== */
+/* ================= VEHICLE CARDS (✅ Grid & Height Fixes) ================= */
 
 .admin-vehicle-grid {
   display: grid;
-  /* The magic line: Add as many columns as fit, but never let a card get smaller than 280px */
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 24px; /* Space between the cards */
-  align-items: start; /* Stops short cards from stretching vertically to match taller ones */
+  gap: 24px;
+  align-items: stretch; /* Forces all cards in a row to match height */
   width: 100%;
-}
-
-@media (max-width: 1200px) {
-  .admin-vehicle-grid { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
-}
-
-@media (max-width: 780px) {
-  .admin-vehicle-grid { grid-template-columns: 1fr; }
 }
 
 .admin-vehicle-card {
@@ -473,769 +447,77 @@
   cursor: pointer;
   box-shadow: var(--ad-shadow-sm);
   transition: transform 120ms ease, box-shadow 160ms ease, border-color 160ms ease;
+  
+  /* Flex magic to push buttons to the bottom */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .admin-vehicle-card:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: var(--ad-shadow);
   border-color: rgba(0, 98, 5, 0.28);
 }
 
-.admin-vehicle-card:focus-visible {
-  outline: none;
-  box-shadow: var(--ad-focus);
-}
-
-/* Top 2/4 area = image template */
-/* The container holding the image */
-/* The container holding the image */
 .admin-vehicle-media {
   width: 100%;
   height: 200px; 
   position: relative;
-  overflow: hidden;
-  background-color: #f3f4f6; /* Light gray placeholder color */
+  background-color: #f3f4f6;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0; /* Prevents image from squishing */
 }
 
-/* The actual <img> tag */
-.admin-vehicle-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover; /* Ensures the image fills the space without distortion */
-  display: block;
-}
-
-/* Fallback text if no image exists */
-.admin-vehicle-img-placeholder {
-  color: #9ca3af;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-/* --- Card Body Layout --- */
-
-/* --- Card Body Layout & Typography --- */
+.admin-vehicle-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.admin-vehicle-img-placeholder { color: #9ca3af; font-size: 14px; font-weight: 500; }
 
 .admin-vehicle-body {
-  padding: 16px; /* Slightly increased padding for better breathing room */
-  font-family: inherit; /* Ensures it perfectly matches your dashboard's global font */
-}
-
-/* Layouts */
-.admin-vehicle-title-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-
-.admin-vehicle-title {
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 4px; 
+  flex-grow: 1; /* Pushes everything below it (actions) to the bottom edge */
 }
 
-.admin-vehicle-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 16px; /* Gives nice separation before the buttons */
-}
+.admin-vehicle-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.admin-vehicle-title { display: flex; flex-direction: column; gap: 4px; }
+
+.admin-vehicle-title .admin-bold { font-size: 16px; font-weight: 700; color: #111827; line-height: 1.2; margin: 0; }
+.admin-vehicle-title .admin-muted-sm { font-size: 13px; color: #6b7280; line-height: 1.4; }
+.admin-vehicle-meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
 
 .admin-vehicle-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  margin-top: auto; /* Glues the buttons to the bottom of the card */
 }
 
-/* --- Strict Typography Rules --- */
+/* ================= MODALS & FORMS ================= */
 
-/* Vehicle Name */
-.admin-vehicle-title .admin-bold {
-  font-size: 16px;
-  font-weight: 600;
-  color: #111827; /* Near-black for primary emphasis */
-  line-height: 1.2;
-  margin: 0;
-}
-
-/* ID and Plate Number */
-.admin-vehicle-title .admin-muted-sm {
-  font-size: 13px;
-  font-weight: 400;
-  color: #6b7280; /* Medium gray so it doesn't fight the title */
-  line-height: 1.4;
-}
-
-/* Model and Year */
-.admin-vehicle-meta .admin-muted {
-  font-size: 14px;
-  font-weight: 500;
-  color: #4b5563; /* Slightly darker gray to anchor the middle of the card */
-  line-height: 1.4;
-}
-
-@media (max-width: 780px) {
-  .admin-vehicle-detail { grid-template-columns: 1fr; }
-}
-
-/* --- Vehicle Details Modal Typography & Layout --- */
-
-.admin-vehicle-detail-media {
-  width: 100%;
-  height: 100%;
-  min-height: 250px;
-  background-color: #f3f4f6;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.admin-vehicle-detail-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.admin-vehicle-detail-info {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.admin-vehicle-detail-title-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #e5e7eb;
-  margin-bottom: 16px;
-}
-
-/* 2-column grid for the vehicle stats */
-.admin-vehicle-detail-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.admin-detail-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.admin-detail-item .admin-muted-sm {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #6b7280;
-}
-
-.admin-detail-item .admin-bold {
-  font-size: 15px;
-  color: #111827;
-}
-
-.admin-vehicle-detail-actions {
-  margin-top: auto; /* Pushes the buttons to the bottom of the right column */
-  display: flex;
-  gap: 12px;
-  padding-top: 16px;
-  border-top: 1px solid #e5e7eb;
-}
-
-@media (max-width: 780px) {
-  .admin-vehicle-detail-grid { grid-template-columns: 1fr; }
-}
-
-.admin-vehicle-detail-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.admin-loading {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  background: var(--ad-bg);
-}
-
-.spinner {
-  background: #fff;
-  border: 1px solid var(--ad-border);
-  border-radius: 14px;
-  padding: 14px 18px;
-  box-shadow: var(--ad-shadow-sm);
-  font-weight: 800;
-}
-
-.admin-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 900;
-  border: 1px solid transparent;
-}
-
-.b-good, .b-approved {
-  background: rgba(22, 163, 74, 0.12);
-  color: #166534;
-  border-color: rgba(22, 163, 74, 0.25);
-}
-
-.b-fair, .b-pending, .b-ongoing {
-  background: rgba(245, 158, 11, 0.14);
-  color: #92400e;
-  border-color: rgba(245, 158, 11, 0.25);
-}
-
-.b-repair {
-  background: rgba(59, 130, 246, 0.14);
-  color: #1d4ed8;
-  border-color: rgba(59, 130, 246, 0.25);
-}
-
-.b-out, .b-rejected {
-  background: rgba(185, 28, 28, 0.12);
-  color: #991b1b;
-  border-color: rgba(185, 28, 28, 0.25);
-}
-
-.b-returned {
-  background: rgba(100, 116, 139, 0.14);
-  color: #334155;
-  border-color: rgba(100, 116, 139, 0.25);
-}
-
-.admin-overlay {
+.admin-overlay, .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(2,6,23,0.55);
-  backdrop-filter: blur(6px);
-  display: grid;
-  place-items: center;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
   padding: 18px;
   z-index: 3000;
 }
 
-.admin-modal {
-  width: min(720px, 100%);
-  background: #fff;
-  border-radius: 18px;
-  border: 1px solid var(--ad-border);
-  box-shadow: var(--ad-shadow);
-  overflow: hidden;
-}
-
-.admin-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--ad-border);
-}
-
-.admin-modal-header h3 { margin: 0; font-size: 14px; font-weight: 900; }
-
-.admin-close { padding: 8px 10px; }
-
-.admin-modal-body { padding: 16px; }
-
-.admin-modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 14px 16px;
-  border-top: 1px solid var(--ad-border);
-}
-
-.admin-form-row {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.admin-form-group { display: flex; flex-direction: column; gap: 6px; }
-.admin-form-group label { font-size: 12px; font-weight: 850; color: var(--ad-muted); }
-
-.admin-form-group input,
-.admin-form-group select {
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid var(--ad-border);
-  background: #fff;
-  font-size: 13px;
-  outline: none;
-  transition: box-shadow 160ms ease, border-color 160ms ease;
-}
-
-.admin-form-group input:focus,
-.admin-form-group select:focus {
-  box-shadow: var(--ad-focus);
-  border-color: rgba(0, 98, 5, 0.35);
-}
-
-.admin-checkbox {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  cursor: pointer;
-  user-select: none;
-}
-
-.admin-checkbox input { transform: translateY(0.5px); }
-
-@media (max-width: 1024px) {
-  .admin-sidebar {
-    width: 240px;
-    flex: 0 0 240px;
-  }
-  .admin-topbar {
-    margin: 18px 18px 16px 18px;
-  }
-  .admin-card {
-    margin: 0 18px 18px 18px;
-  }
-  .admin-stats-grid {
-    margin: 0 18px 16px 18px;
-  }
-  .admin-table th,
-  .admin-table td {
-    padding: 10px 12px;
-    font-size: 12px;
-  }
-}
-
-@media (max-width: 768px) {
-  .admin-root { flex-direction: column; }
-  .admin-sidebar {
-    position: sticky;
-    top: 0;
-    width: 100%;
-    height: auto;
-    flex: 0 0 auto;
-    padding: 16px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-  .admin-logo {
-    margin-bottom: 0;
-    font-size: 16px;
-  }
-  .admin-footer {
-    position: relative;
-    left: auto;
-    right: auto;
-    bottom: auto;
-    margin-top: 0;
-    margin-left: auto;
-    font-size: 11px;
-  }
-  .admin-main {
-    height: auto;
-    overflow: auto;
-  }
-  .admin-topbar {
-    margin: 16px 16px 14px 16px;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-  .admin-topbar h1 {
-    font-size: 16px;
-    flex: 1;
-  }
-  .admin-card {
-    margin: 0 16px 16px 16px;
-  }
-  .admin-vehicle-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
-    max-height: calc(100vh - 200px);
-  }
-  .admin-vehicle-detail {
-    grid-template-columns: 1fr;
-  }
-  .admin-modal {
-    width: calc(100% - 36px);
-  }
-  .admin-card .admin-table-scroll {
-    max-height: calc(100vh - 200px);
-  }
-  .admin-table {
-    min-width: 100%;
-    font-size: 13px;
-  }
-  .admin-table th,
-  .admin-table td {
-    padding: 10px 8px;
-    font-size: 12px;
-  }
-  .admin-actions {
-    flex-direction: column;
-    gap: 6px;
-  }
-}
-
-@media (max-width: 600px) {
-  .admin-sidebar {
-    padding: 12px;
-    gap: 12px;
-  }
-  .admin-logo {
-    font-size: 14px;
-    padding: 8px 10px;
-  }
-  .admin-logo span {
-    display: none;
-  }
-  .admin-nav {
-    padding: 10px;
-    gap: 10px;
-    font-size: 13px;
-    flex: 1;
-    min-width: 45%;
-    justify-content: center;
-  }
-  .admin-icon {
-    width: 24px;
-    height: 24px;
-    font-size: 14px;
-  }
-  .admin-footer {
-    display: none;
-  }
-  .admin-topbar {
-    margin: 12px 12px 12px 12px;
-    padding: 12px 14px;
-  }
-  .admin-topbar h1 {
-    font-size: 14px;
-  }
-  .admin-card-header {
-    padding: 12px 14px;
-    flex-wrap: wrap;
-  }
-  .admin-card-header h3 {
-    font-size: 13px;
-  }
-  .admin-stats-grid {
-    margin: 0 12px 12px 12px;
-    gap: 10px;
-  }
-  .admin-stat-card {
-    padding: 12px;
-    gap: 10px;
-  }
-  .admin-stat-icon {
-    width: 36px;
-    height: 36px;
-    font-size: 16px;
-  }
-  .admin-stat-info h2 {
-    font-size: 18px;
-  }
-  .admin-stat-info p {
-    font-size: 11px;
-  }
-  .admin-card {
-    margin: 0 12px 12px 12px;
-  }
-  .admin-vehicle-grid {
-    padding: 8px;
-  }
-  .admin-card .admin-table-scroll {
-    max-height: calc(100vh - 150px);
-    overflow-x: auto;
-  }  .admin-table {
-    min-width: 100%;
-    font-size: 11px;
-  }
-  .admin-table th {
-    padding: 8px 6px;
-    font-size: 10px;
-    font-weight: 700;
-  }
-  .admin-table td {
-    padding: 8px 6px;
-    font-size: 11px;
-  }
-  .admin-table th:nth-child(4),
-  .admin-table th:nth-child(6),
-  .admin-table td:nth-child(4),
-  .admin-table td:nth-child(6) {
-    display: none;
-  }
-  .admin-actions {
-    gap: 3px;
-    flex-wrap: wrap;
-  }
-  .admin-actions button {
-    flex: 1;
-    min-width: 50px;
-  }
-  .admin-btn {
-    padding: 6px 8px;
-    font-size: 10px;
-  }
-  .admin-form-group label {
-    font-size: 11px;
-  }
-  .admin-form-group input,
-  .admin-form-group select {
-    padding: 8px 10px;
-    font-size: 12px;
-  }
-  .admin-modal {
-    width: calc(100% - 24px);
-  }
-  .admin-modal-header {
-    padding: 12px 14px;
-  }
-.admin-modal-body {
-  /* 1. Consistent Spacing */
-  padding: 24px;
-  
-  /* 2. Global Text Consistency for the Modal */
-  font-family: inherit;
-  font-size: 14px;
-  color: #374151;
-  line-height: 1.5;
-
-  /* 3. THE FIX FOR ZOOMING OUT: 
-     This forces the modal body to scroll internally if the screen is too small, 
-     keeping your Header and Footer (Save/Cancel buttons) permanently glued in place! */
-  max-height: calc(100vh - 180px); 
-  overflow-y: auto; 
-}
-  .admin-modal-body::-webkit-scrollbar {
-    width: 6px;
-  }
-  .admin-modal-body::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .admin-modal-body::-webkit-scrollbar-thumb {
-    background-color: #cbd5e1;
-    border-radius: 10px;
-  }
-  .admin-modal-body::-webkit-scrollbar-thumb:hover {
-    background-color: #94a3b8;
-  }
-}
-
-@media (max-width: 480px) {
-  .admin-sidebar {
-    flex-direction: column;
-  }
-  .admin-logo {
-    width: 100%;
-    text-align: center;
-  }
-  .admin-nav {
-    flex: 1;
-    min-width: 100%;
-    justify-content: center;
-  }
-  .admin-topbar {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .admin-user-btn {
-    font-size: 12px;
-    padding: 6px 10px;
-  }
-  .admin-avatar {
-    width: 28px;
-    height: 28px;
-  }
-}
-
-/* ===== Contrast fixes (enforce: green => white text, white => dark text) ===== */
-
-.admin-root a { color: inherit; }
-
-/* White/neutral surfaces => dark text */
-.admin-main,
-.admin-topbar,
-.admin-card,
-.admin-card-compact,
-.admin-modal,
-.admin-dropdown,
-.admin-toast,
-.admin-table,
-.admin-table td,
-.admin-table th {
-  color: var(--ad-text);
-}
-
-.admin-topbar,
-.admin-card,
-.admin-card-compact,
-.admin-modal,
-.admin-dropdown,
-.admin-toast {
-  background: #fff;
-}
-
-/* Green/brand surfaces => white text */
-.admin-sidebar,
-.admin-sidebar * {
-  color: rgba(255, 255, 255, 0.92);
-}
-
-.admin-logo,
-.admin-footer,
-.admin-nav,
-.admin-nav * {
-  color: rgba(255, 255, 255, 0.90);
-}
-
-.admin-nav.active,
-.admin-nav.active * {
-  color: #ffffff;
-}
-
-.admin-sidebar a,
-.admin-sidebar a:visited {
-  color: rgba(255, 255, 255, 0.92);
-}
-
-/* Inputs: white fields => dark text */
-.admin-form-group input,
-.admin-form-group select,
-.admin-form-group textarea {
-  color: var(--ad-text);
-  background: #fff;
-}
-
-.admin-form-group input::placeholder,
-.admin-form-group textarea::placeholder {
-  color: rgba(100, 116, 139, 0.9);
-}
-
-/* Buttons: solid brand buttons => white; default/outline/danger => readable */
-.admin-btn { color: var(--ad-text); }
-.admin-btn-primary,
-.admin-btn-success { color: #fff; }
-.admin-btn-outline,
-.admin-btn-danger,
-.admin-btn-warning { color: var(--ad-text); }
-
-/* Dropdown items always readable */
-.admin-dropdown-item { color: var(--ad-text); }
-
-/* Sticky table headers readable */
-.admin-table thead th {
-  background: #fff;
-  color: var(--ad-text);
-}
-
-/* --- Modal 2-Column Layout --- */
-
-.admin-modal-body-split {
-  display: grid;
-  grid-template-columns: 1fr 2fr; /* Left column takes 1 fraction, Right takes 2 */
-  gap: 24px;
-  align-items: stretch; /* Makes both columns match height */
-}
-
-/* Style the dashed upload box to fill the column nicely */
-.admin-image-upload-box {
-  border: 2px dashed #ccc;
-  border-radius: 6px;
-  padding: 16px;
-  text-align: center;
-  height: calc(100% - 24px); /* Fills available space minus label height */
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background-color: #fafafa;
-  transition: border-color 0.2s;
-}
-
-.admin-image-upload-box:hover {
-  border-color: #999;
-}
-
-/* Ensure the image scales neatly within its new column */
-.admin-preview-img {
-  max-width: 100%;
-  max-height: 180px;
-  object-fit: contain;
-  border-radius: 4px;
-  margin-bottom: 12px;
-}
-
-/* Responsive fallback: Stack vertically on small screens */
-@media (max-width: 768px) {
-  .admin-modal-body-split {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-  .admin-image-upload-box {
-    height: auto;
-    min-height: 150px;
-  }
-}
-
-.admin-assignment-box {
-  background: #f8f9fa;
-  padding: 6px 10px;
-  border-radius: 6px;
-  border-left: 3px solid #007bff;
-  font-size: 0.85rem;
-}
-.admin-badge-mini {
-  font-size: 0.7rem;
-  padding: 2px 5px;
-  margin-left: 5px;
-  border-radius: 4px;
-  text-transform: uppercase;
-}
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(15, 23, 42, 0.7); 
-  backdrop-filter: blur(4px); 
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-  z-index: 9999;
-}
-
-/* 2. THE MODAL CONTAINER */
-.modal-content.modal-large {
-  background: #ffffff;
-  border-radius: 16px; 
+.admin-modal, .modal-content.modal-large {
   width: 100%;
   max-width: 800px;
-  max-height: 90vh;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   display: flex;
   flex-direction: column; 
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-height: 90vh;
   animation: modalSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   overflow: hidden;
 }
@@ -1245,158 +527,72 @@
   to { transform: translateY(0); opacity: 1; }
 }
 
-/* 3. MODAL HEADER */
-.modal-header {
-  padding: 20px 24px;
-  border-bottom: 1px solid #f1f5f9;
+.admin-modal-header, .modal-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid #f1f5f9;
   background: #fafafa;
 }
 
-.modal-header h2 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin: 0;
-}
+.admin-modal-header h3, .modal-header h2 { margin: 0; font-size: 18px; font-weight: 800; color: #1e293b; }
 
-/* 4. FORM SECTIONS & BODY */
-form {
-  overflow-y: auto;
+.admin-modal-body, form {
   padding: 24px;
+  overflow-y: auto;
+  flex-grow: 1;
 }
 
-.form-section {
-  margin-bottom: 32px;
-}
+.admin-form-group, .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.admin-form-group label, .form-group label { font-size: 13px; font-weight: 700; color: #334155; }
 
-.form-section h3 {
-  font-size: 0.875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #64748b;
-  margin-bottom: 16px;
-  border-bottom: 1px solid #f1f5f9;
-  padding-bottom: 8px;
-}
-
-/* 5. INPUT STYLING (Fixed: Black Text) */
-.form-group {
-  margin-bottom: 16px;
-}
-
-.form-group label {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #334155;
-  margin-bottom: 6px;
-}
-
-.form-group input, 
-.form-group select, 
-.form-group textarea {
+.admin-form-group input, .admin-form-group select, .form-group input, .form-group select, .form-group textarea {
   width: 100%;
   padding: 10px 12px;
-  background-color: #f1f5f9; /* Grey background */
+  background-color: #f8fafc;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
-  font-size: 0.95rem;
-  color: #000000; /* Force black text */
-  transition: all 0.2s;
-}
-
-.form-group input:focus, 
-.form-group select:focus {
+  font-size: 14px;
+  color: #0f172a;
   outline: none;
-  background-color: #ffffff; /* Turn white on focus for contrast */
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  transition: box-shadow 160ms ease, border-color 160ms ease, background-color 160ms ease;
 }
 
-/* 6. MODAL FOOTER / ACTIONS */
-.form-actions {
-  padding: 16px 24px;
-  border-top: 1px solid #f1f5f9;
+.admin-form-group input:focus, .admin-form-group select:focus, .form-group input:focus, .form-group select:focus {
+  background-color: #ffffff;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.admin-modal-footer, .form-actions {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid #f1f5f9;
   background: #fafafa;
 }
 
-/* 7. REFINED BUTTONS */
-.btn-cancel {
-  padding: 10px 20px;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  color: #64748b;
-  font-weight: 600;
-  cursor: pointer;
+/* ================= RESPONSIVE ADJUSTMENTS ================= */
+
+@media (max-width: 1024px) {
+  .admin-sidebar { width: 240px; flex: 0 0 240px; }
+  .admin-topbar, .admin-card, .admin-stats-grid { margin: 18px 18px 16px 18px; }
 }
 
-.btn-save {
-  padding: 10px 20px;
-  background: #2563eb;
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
+@media (max-width: 768px) {
+  .admin-root { flex-direction: column; }
+  .admin-sidebar { position: sticky; top: 0; width: 100%; height: auto; flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; z-index: 1000;}
+  .admin-main { overflow: visible; }
+  .admin-vehicle-grid { grid-template-columns: 1fr; }
+  .admin-table-scroll { max-height: calc(100vh - 180px); }
+  .admin-modal-body-split { grid-template-columns: 1fr; }
 }
 
-/* 8. TOGGLE BUTTON STYLING (Fixed: Red for Inactive) */
-.status-toggle-container {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.toggle-status-btn {
-  width: 100%;
-  padding: 12px;
-  border-radius: 8px;
-  font-weight: 700;
-  font-size: 0.9rem;
-  text-transform: uppercase;
-  cursor: pointer;
-  border: 2px solid transparent;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-}
-
-/* Active State: Emerald Green */
-.toggle-status-btn.is-active {
-  background-color: #ecfdf5;
-  color: #059669;
-  border-color: #10b981;
-}
-
-/* Inactive State: Darkened Red */
-.toggle-status-btn.is-inactive {
-  background-color: #fef2f2;
-  color: #991b1b; /* Dark Red Text */
-  border-color: #dc2626; /* Bright Red Border */
-}
-
-.status-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background-color: currentColor;
-}
-
-.admin-table-row-hover:hover {
-  background-color: #f1f5f9 !important; /* Light grey highlight */
-  transition: background-color 0.2s ease;
-}
-
-/* Ensure text remains black on hover */
-.admin-table-row-hover:hover .admin-bold {
-  color: #000000;
+@media (max-width: 600px) {
+  .admin-logo span, .admin-footer { display: none; }
+  .admin-nav { min-width: 45%; justify-content: center; }
+  .admin-table { font-size: 12px; }
+  .admin-actions { flex-wrap: wrap; }
 }

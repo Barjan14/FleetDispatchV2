@@ -44,57 +44,117 @@ export default function VehicleFormModal({ mode, data, onChange, onSave, onClose
 
   return (
     <div className="admin-overlay" onClick={onClose}>
-      <div className="admin-modal" style={{ maxWidth: '800px' }} onClick={e => e.stopPropagation()}>
-        <div className="admin-modal-header">
-          <h3>{isAdd ? 'Add Vehicle' : 'Edit Vehicle'}</h3>
-          <button className="admin-btn admin-btn-outline admin-close" onClick={onClose} disabled={uploading}>✕</button>
+      <div className="admin-modal" style={{ maxWidth: '850px' }} onClick={e => e.stopPropagation()}>
+        
+        {/* HEADER */}
+        <div className="admin-modal-header" style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h3 style={{ fontSize: '18px', margin: 0, color: '#0f172a', fontWeight: '800' }}>
+            {isAdd ? 'Add New Vehicle' : 'Edit Vehicle Settings'}
+          </h3>
+          <button className="admin-btn admin-btn-outline" onClick={onClose} disabled={uploading} style={{ padding: '6px', border: 'none', color: '#64748b' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
         
-        <div className="admin-modal-body admin-modal-body-split">
+        {/* BODY: Split Layout using Flexbox */}
+        <div className="admin-modal-body" style={{ padding: '32px 24px', display: 'flex', flexWrap: 'wrap', gap: '32px', textAlign: 'left' }}>
           
           {/* LEFT COLUMN: Image Upload */}
-          <div className="admin-modal-column-left">
-            <div className="admin-form-group" style={{ height: '100%' }}>
-              <label>Vehicle Image</label>
-              <div className="admin-image-upload-box">
-                {previewUrl && (
-                  <img 
-                    src={previewUrl} 
-                    alt="Vehicle preview" 
-                    className="admin-preview-img"
-                  />
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  disabled={uploading}
-                  style={{ display: 'none' }}
-                  id="vehicle-image-input"
+          <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '15px', fontWeight: '800', color: '#334155', marginBottom: '12px', display: 'block' }}>Vehicle Image</span>
+            
+            {/* ✅ CHANGED: The main container is now a <label>, making the whole box clickable */}
+            <label 
+              htmlFor="vehicle-image-input"
+              style={{ 
+                width: '100%', 
+                aspectRatio: '1 / 1', 
+                backgroundColor: '#f8fafc', 
+                border: previewUrl ? '1px solid #e2e8f0' : '2px dashed #cbd5e1', 
+                borderRadius: '16px', 
+                display: 'flex', 
+                flexDirection: 'column',
+                alignItems: 'center', 
+                justifyContent: 'center',
+                overflow: 'hidden',
+                position: 'relative',
+                cursor: uploading ? 'not-allowed' : 'pointer', // Adds the pointer hand
+                transition: 'border-color 0.2s'
+              }}
+            >
+              {previewUrl ? (
+                <img 
+                  src={previewUrl} 
+                  alt="Vehicle preview" 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
-                <label 
-                  htmlFor="vehicle-image-input"
-                  style={{
-                    cursor: uploading ? 'not-allowed' : 'pointer',
-                    display: 'block',
-                    padding: '8px',
-                    fontWeight: '500'
-                  }}
-                >
-                  {uploading ? 'Uploading...' : previewUrl ? 'Change Image' : 'Click to upload image'}
-                </label>
-                <div style={{ fontSize: '12px', color: '#999', marginTop: '8px' }}>
-                  Max 5MB • JPEG, PNG, WebP
+              ) : (
+                <div style={{ textAlign: 'center', color: '#94a3b8', padding: '16px' }}>
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '8px' }}>
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                  </svg>
                 </div>
+              )}
+
+              {/* Hidden Upload Input */}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                disabled={uploading}
+                style={{ display: 'none' }}
+                id="vehicle-image-input"
+              />
+
+              {/* ✅ CHANGED: This is now a <div> instead of a <label> because the parent is already a label */}
+              <div 
+                style={{
+                  position: 'absolute',
+                  bottom: previewUrl ? '16px' : 'auto',
+                  backgroundColor: previewUrl ? 'rgba(255,255,255,0.9)' : 'transparent',
+                  backdropFilter: previewUrl ? 'blur(4px)' : 'none',
+                  color: '#0f172a',
+                  padding: '8px 16px',
+                  borderRadius: '999px',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  boxShadow: previewUrl ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : 'none',
+                  transition: 'background-color 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                {uploading ? (
+                  <>
+                    <span className="spinner" style={{ width: '12px', height: '12px', padding: 0, borderWidth: '2px' }}></span> Uploading...
+                  </>
+                ) : previewUrl ? (
+                  'Change Image'
+                ) : (
+                  'Click to Upload'
+                )}
               </div>
-              {uploadError && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{uploadError}</span>}
-            </div>
+            </label>
+            
+            {!previewUrl && !uploading && (
+              <div style={{ fontSize: '11px', color: '#64748b', textAlign: 'center', marginTop: '12px', fontWeight: '500' }}>
+                Max 5MB • JPEG, PNG, WebP
+              </div>
+            )}
+            {uploadError && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '8px', textAlign: 'center', fontWeight: '600' }}>{uploadError}</div>}
           </div>
 
           {/* RIGHT COLUMN: Form Information */}
-          <div className="admin-modal-column-right">
-            <div className="admin-form-row">
-              <div className="admin-form-group">
+          <div style={{ flex: '2 1 400px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="admin-form-group" style={{ margin: 0 }}>
                 <label>Vehicle Name *</label>
                 <input 
                   value={data.name || ''} 
@@ -102,7 +162,7 @@ export default function VehicleFormModal({ mode, data, onChange, onSave, onClose
                   placeholder="e.g. Toyota Hilux"
                 />
               </div>
-              <div className="admin-form-group">
+              <div className="admin-form-group" style={{ margin: 0 }}>
                 <label>Plate Number *</label>
                 <input 
                   value={data.plate_number || ''} 
@@ -112,8 +172,8 @@ export default function VehicleFormModal({ mode, data, onChange, onSave, onClose
               </div>
             </div>
             
-            <div className="admin-form-row">
-              <div className="admin-form-group">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="admin-form-group" style={{ margin: 0 }}>
                 <label>Model</label>
                 <input 
                   value={data.model || ''} 
@@ -121,7 +181,7 @@ export default function VehicleFormModal({ mode, data, onChange, onSave, onClose
                   placeholder="e.g. Hilux Revo"
                 />
               </div>
-              <div className="admin-form-group">
+              <div className="admin-form-group" style={{ margin: 0 }}>
                 <label>Year</label>
                 <input 
                   type="number" 
@@ -132,8 +192,8 @@ export default function VehicleFormModal({ mode, data, onChange, onSave, onClose
               </div>
             </div>
             
-            <div className="admin-form-row">
-              <div className="admin-form-group">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="admin-form-group" style={{ margin: 0 }}>
                 <label>Fuel Type</label>
                 <select value={data.fuel_type || 'Diesel'} onChange={e => onChange({...data, fuel_type: e.target.value})}>
                   <option>Gasoline</option>
@@ -142,7 +202,7 @@ export default function VehicleFormModal({ mode, data, onChange, onSave, onClose
                   <option>Hybrid</option>
                 </select>
               </div>
-              <div className="admin-form-group">
+              <div className="admin-form-group" style={{ margin: 0 }}>
                 <label>Condition</label>
                 <select value={data.condition || 'Good'} onChange={e => onChange({...data, condition: e.target.value})}>
                   <option>Good</option>
@@ -153,8 +213,8 @@ export default function VehicleFormModal({ mode, data, onChange, onSave, onClose
               </div>
             </div>
             
-            <div className="admin-form-row">
-              <div className="admin-form-group">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="admin-form-group" style={{ margin: 0 }}>
                 <label>Odometer (km)</label>
                 <input 
                   type="number" 
@@ -163,22 +223,23 @@ export default function VehicleFormModal({ mode, data, onChange, onSave, onClose
                   placeholder="0"
                 />
               </div>
-              {/* ✅ Changed from a Checkbox to a explicit Status Dropdown */}
-              <div className="admin-form-group">
+              <div className="admin-form-group" style={{ margin: 0 }}>
                 <label>Status</label>
                 <select 
                   value={data.is_available !== false} 
                   onChange={e => onChange({...data, is_available: e.target.value === 'true'})}
                 >
                   <option value={true}>Available</option>
-                  <option value={false}>On Duty</option>
+                  <option value={false}>On Duty / In Use</option>
                 </select>
               </div>
             </div>
+            
           </div>
         </div>
         
-        <div className="admin-modal-footer">
+        {/* FOOTER */}
+        <div className="admin-modal-footer" style={{ padding: '16px 24px', backgroundColor: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
           <button className="admin-btn admin-btn-outline" onClick={onClose} disabled={uploading}>Cancel</button>
           <button className="admin-btn admin-btn-primary" onClick={onSave} disabled={uploading}>
             {isAdd ? 'Add Vehicle' : 'Save Changes'}
