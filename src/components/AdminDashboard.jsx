@@ -195,6 +195,54 @@ export default function AdminDashboard() {
     }
   }, [navigate]);
 
+
+  // ── Silent Auto-Reject & Refresh Monitor ──────────────────
+  useEffect(() => {
+    // Set up a background timer to run every 60 seconds
+    const monitorInterval = setInterval(async () => {
+      
+      // 1. Restore the silent auto-refresh to keep your data perfectly synced
+      fetchAll();
+
+      // 2. Find any Pending bookings where the departure time has passed
+      const now = new Date();
+      const expiredBookings = bookings.filter(b => 
+        b.status === 'Pending' && new Date(b.start_datetime) <= now
+      );
+
+      // 3. Auto-reject them and trigger the emails!
+      for (const booking of expiredBookings) {
+        try {
+          // Update the database to Rejected
+          await supabase.from('vehicle_bookings').update({ 
+            status: 'Rejected',
+            admin_notes: (booking.admin_notes ? booking.admin_notes + ' | ' : '') + '[System]: Auto-rejected because departure time passed.'
+          }).eq('id', booking.id);
+
+          // Trigger your Email Edge Function
+          await supabase.functions.invoke('send-approval-email', {
+            body: {
+              userEmail:   booking.email || booking.user?.email,
+              status:      'Rejected',
+              vehicleName: 'N/A',
+              driverName:  'N/A',
+              destination: booking.destination || 'Your Destination',
+              startDate:   formatDepartureTime(booking.start_datetime),
+            },
+          });
+          
+          // Notify the admin visually
+          showToast(`System auto-rejected expired booking for ${booking.destination}`);
+        } catch (err) {
+          console.error('Auto-reject monitor error:', err);
+        }
+      }
+    }, 60000); // 60000ms = 1 minute
+
+    // Cleanup the timer if you navigate away
+    return () => clearInterval(monitorInterval);
+  }, [bookings, fetchAll]);
+
   // ── Silent log refresh ────────────────────────────────────
   const fetchLogsSilently = useCallback(async () => {
     try {
