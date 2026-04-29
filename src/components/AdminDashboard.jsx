@@ -26,10 +26,10 @@ import { logVehicleChange, logVehicleUpdate, fetchVehicleChangeLogs } from '../u
 
 const NAV = [
   { key: 'overview', icon: '📊', label: 'Overview' },
-  { key: 'vehicles', icon: '🚗', label: 'Vehicles' },
   { key: 'users',    icon: '👥', label: 'Users'    },
-  { key: 'bookings', icon: '📅', label: 'Bookings' },
+  { key: 'vehicles', icon: '🚗', label: 'Vehicles' },
   { key: 'drivers', icon: '🚛', label: 'Drivers' },
+  { key: 'bookings', icon: '📅', label: 'Bookings' },
   { key: 'fleets',   icon: '🗂️', label: 'Fleets'   },
   { key: 'logs',     icon: '📋', label: 'Logs'     },
   { key: 'financial', icon: '💰', label: 'Financial Data' },
@@ -373,8 +373,6 @@ export default function AdminDashboard() {
         </div>
 
         {toast.msg && <div className={`admin-toast ${toast.type === 'err' ? 'error' : 'success'}`}>{toast.msg}</div>}
-
-        {tab === 'overview' && <OverviewPage stats={stats} />}
         
         {tab === 'vehicles' && (
           <VehiclesPage 
@@ -438,6 +436,15 @@ export default function AdminDashboard() {
             loading={logsLoading} 
             tripLogs={tripLogs}
             onRefresh={fetchLogsSilently} /* ✅ Pass refresh down */
+          />
+        )}
+        {tab === 'overview' && (
+          <OverviewPage 
+            stats={stats} 
+            bookings={bookings} 
+            vehicles={vehicles} 
+            drivers={drivers}
+            onNavigate={setTab} /* ✅ ADD THIS LINE */
           />
         )}
 

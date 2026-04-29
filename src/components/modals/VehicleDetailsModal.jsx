@@ -1,5 +1,6 @@
 import React from 'react';
 
+// Helper to color-code conditions
 function condBadge(c) {
   const map = { Good: 'b-good', Fair: 'b-fair', 'Under Repair': 'b-repair', 'Out of Service': 'b-out' };
   return map[c] || 'b-out';
@@ -10,90 +11,127 @@ export default function VehicleDetailsModal({ vehicle, onEdit, onDelete, onClose
 
   return (
     <div className="admin-overlay" onClick={onClose}>
-      {/* Set a max-width so the modal has enough room for two columns */}
-      <div className="admin-modal" style={{ maxWidth: '800px' }} onClick={e => e.stopPropagation()}>
+      <div className="admin-modal" style={{ maxWidth: '850px' }} onClick={e => e.stopPropagation()}>
         
-        <div className="admin-modal-header">
-          <h3>Vehicle Details</h3>
-          <button className="admin-btn admin-btn-outline admin-close" onClick={onClose}>✕</button>
+        {/* HEADER */}
+        <div className="admin-modal-header" style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h3 style={{ fontSize: '18px', margin: 0, color: '#0f172a', fontWeight: '800' }}>Vehicle Profile</h3>
+          <button className="admin-btn admin-btn-outline" onClick={onClose} style={{ padding: '6px', border: 'none', color: '#64748b' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
         
-        {/* Using the 2-column split class we made earlier! */}
-        <div className="admin-modal-body admin-modal-body-split">
+        {/* BODY: Split Layout using Flexbox */}
+        <div className="admin-modal-body" style={{ padding: '32px 24px', display: 'flex', flexWrap: 'wrap', gap: '32px', textAlign: 'left' }}>
           
           {/* LEFT COLUMN: Vehicle Image */}
-          <div className="admin-modal-column-left">
-            <div className="admin-vehicle-detail-media">
+          <div style={{ flex: '1 1 250px', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ 
+              width: '100%', 
+              aspectRatio: '1 / 1', 
+              backgroundColor: '#f8fafc', 
+              border: '2px dashed #cbd5e1', 
+              borderRadius: '16px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              overflow: 'hidden'
+            }}>
               {vehicle.image_url ? (
                 <img 
                   src={vehicle.image_url} 
                   alt={vehicle.name} 
-                  className="admin-vehicle-detail-img" 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                 />
               ) : (
-                <div className="admin-vehicle-img-placeholder">No Image Available</div>
+                <div style={{ textAlign: 'center', color: '#94a3b8' }}>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '8px' }}>
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                  </svg>
+                  <div style={{ fontSize: '13px', fontWeight: '600' }}>No Image Provided</div>
+                </div>
               )}
             </div>
           </div>
 
           {/* RIGHT COLUMN: Vehicle Information */}
-          <div className="admin-modal-column-right">
-            <div className="admin-vehicle-detail-info">
-              
-              {/* Title & Badge */}
-              <div className="admin-vehicle-detail-title-row">
-                <div>
-                  <div className="admin-bold" style={{ fontSize: '20px', marginBottom: '4px', color: '#111827' }}>
-                    {vehicle.name}
-                  </div>
-                  <div className="admin-muted-sm">
-                    #{vehicle.id} • Plate: {vehicle.plate_number}
-                  </div>
+          <div style={{ flex: '2 1 400px', display: 'flex', flexDirection: 'column' }}>
+            
+            {/* Title & Availability Badge */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e2e8f0', paddingBottom: '20px', marginBottom: '20px' }}>
+              <div>
+                <div style={{ fontSize: '26px', fontWeight: '900', color: '#0f172a', marginBottom: '6px', letterSpacing: '-0.02em', lineHeight: '1.1' }}>
+                  {vehicle.name}
                 </div>
-                <span className={`admin-badge ${condBadge(vehicle.condition)}`}>
+                <div style={{ fontSize: '14px', color: '#64748b', fontWeight: '500' }}>
+                  System ID: #{vehicle.id} <span style={{ margin: '0 8px' }}>•</span> Plate: <span style={{ color: '#0f172a', fontWeight: '700' }}>{vehicle.plate_number}</span>
+                </div>
+              </div>
+              <span className={`admin-badge ${vehicle.is_available ? 'b-approved' : 'b-ongoing'}`} style={{ padding: '6px 12px', fontSize: '13px' }}>
+                {vehicle.is_available ? 'Currently Available' : 'On Duty / In Use'}
+              </span>
+            </div>
+
+            {/* Specifications Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px 16px', marginBottom: '32px' }}>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', fontWeight: '700' }}>Condition</span>
+                <span className={`admin-badge ${condBadge(vehicle.condition)}`} style={{ alignSelf: 'flex-start', fontSize: '13px', padding: '4px 10px' }}>
                   {vehicle.condition}
                 </span>
               </div>
 
-              {/* Data Grid */}
-              <div className="admin-vehicle-detail-grid">
-                <div className="admin-detail-item">
-                  <span className="admin-muted-sm">Model</span>
-                  <span className="admin-bold">{vehicle.model || '—'}</span>
-                </div>
-                <div className="admin-detail-item">
-                  <span className="admin-muted-sm">Year</span>
-                  <span className="admin-bold">{vehicle.year || '—'}</span>
-                </div>
-                <div className="admin-detail-item">
-                  <span className="admin-muted-sm">Fuel Type</span>
-                  <span className="admin-bold">{vehicle.fuel_type || '—'}</span>
-                </div>
-                <div className="admin-detail-item">
-                  <span className="admin-muted-sm">Odometer</span>
-                  <span className="admin-bold">{vehicle.odometer_km ? `${vehicle.odometer_km} km` : '—'}</span>
-                </div>
-                <div className="admin-detail-item">
-                  <span className="admin-muted-sm">Availability</span>
-                  {/* ✅ Changed b-rejected to b-ongoing */}
-                  <span className={`admin-badge ${vehicle.is_available ? 'b-approved' : 'b-ongoing'}`}>
-                    {vehicle.is_available ? 'Available' : 'On Duty'}
-                  </span>
-                </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', fontWeight: '700' }}>Odometer</span>
+                <span style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>
+                  {vehicle.odometer_km ? `${Number(vehicle.odometer_km).toLocaleString()} km` : '—'}
+                </span>
               </div>
 
-              {/* Action Buttons */}
-              <div className="admin-vehicle-detail-actions">
-                <button className="admin-btn admin-btn-primary" type="button" onClick={onEdit}>Edit Vehicle</button>
-                <button className="admin-btn admin-btn-danger" type="button" onClick={() => onDelete(vehicle.id)}>Delete Vehicle</button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', fontWeight: '700' }}>Model</span>
+                <span style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>{vehicle.model || '—'}</span>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', fontWeight: '700' }}>Year</span>
+                <span style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>{vehicle.year || '—'}</span>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', fontWeight: '700' }}>Fuel Type</span>
+                <span style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>{vehicle.fuel_type || '—'}</span>
               </div>
 
             </div>
-          </div>  
-        </div>
 
-        <div className="admin-modal-footer">
-          <button className="admin-btn admin-btn-outline" onClick={onClose}>Close</button>
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', gap: '12px', marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
+              <button 
+                className="admin-btn admin-btn-primary" 
+                style={{ flex: 1, padding: '12px', fontSize: '14px' }} 
+                type="button" 
+                onClick={onEdit}
+              >
+                Edit Vehicle Settings
+              </button>
+              <button 
+                className="admin-btn admin-btn-danger" 
+                style={{ padding: '12px 24px', fontSize: '14px' }} 
+                type="button" 
+                onClick={() => onDelete(vehicle.id)}
+              >
+                Delete
+              </button>
+            </div>
+
+          </div> 
         </div>
 
       </div>

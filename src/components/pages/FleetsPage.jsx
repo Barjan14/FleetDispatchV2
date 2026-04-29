@@ -110,33 +110,35 @@ export default function FleetsPage({
                       </div>
                     </td>
                     
-                    {/* 4. ACTIONS (Vertically Aligned) */}
-                    <td className="admin-actions" style={{ verticalAlign: 'middle' }}>
-                      {bk.status === 'Approved' && (
-                        <button 
-                          className="admin-btn admin-btn-primary"
-                          style={{ width: '100px', fontWeight: 'bold' }}
-                          onClick={() => onMarkOngoing(bk.id)}
-                        >
-                          Ongoing
-                        </button>
-                      )}
+                    {/* 4. ACTIONS (✅ Fixed: Removed className="admin-actions" and added flex div) */}
+                    <td style={{ verticalAlign: 'middle' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {bk.status === 'Approved' && (
+                          <button 
+                            className="admin-btn admin-btn-primary"
+                            style={{ width: '100px', fontWeight: 'bold' }}
+                            onClick={() => onMarkOngoing(bk.id)}
+                          >
+                            Ongoing
+                          </button>
+                        )}
 
-                      {bk.status === 'Ongoing' && (
-                        <button 
-                          className="admin-btn admin-btn-success"
-                          style={{ 
-                            width: '100px', 
-                            fontWeight: 'bold', 
-                            backgroundColor: '#16a34a',
-                            color: 'white',
-                            borderColor: '#16a34a'
-                          }}
-                          onClick={() => onMarkReturned(bk.id)}
-                        >
-                          Complete
-                        </button>
-                      )}
+                        {bk.status === 'Ongoing' && (
+                          <button 
+                            className="admin-btn admin-btn-success"
+                            style={{ 
+                              width: '100px', 
+                              fontWeight: 'bold', 
+                              backgroundColor: '#16a34a',
+                              color: 'white',
+                              borderColor: '#16a34a'
+                            }}
+                            onClick={() => onMarkReturned(bk.id)}
+                          >
+                            Complete
+                          </button>
+                        )}
+                      </div>
                     </td>
                     
                   </tr>
