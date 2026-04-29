@@ -406,6 +406,7 @@ export default function AdminDashboard() {
 
         console.log(`Triggering ${status} email for:`, booking.email || booking.user?.email);
 
+        // Inside AdminDashboard.jsx -> bookingAction
         const { error: funcError } = await supabase.functions.invoke('send-approval-email', {
           body: {
             userEmail:   booking.email || booking.user?.email,
@@ -413,7 +414,16 @@ export default function AdminDashboard() {
             vehicleName: assignedVehicle?.name || 'N/A',
             driverName:  assignedDriver?.name  || 'N/A',
             destination: booking.destination   || 'Your Destination',
-            startDate:   booking.start_datetime,
+            
+            startDate:   new Date(booking.start_datetime).toLocaleString('en-US', {
+              weekday: 'short',
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true
+            }),
           },
         });
 

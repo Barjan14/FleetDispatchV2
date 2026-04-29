@@ -26,7 +26,7 @@ serve(async (req: Request) => {
         <p>Good day, your vehicle request for <b>${destination}</b> has been processed.</p>
         <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
           <p><b>Destination:</b> ${destination}</p>
-          <p><b>Departure:</b> ${new Date(startDate).toLocaleString()}</p>
+          <p><b>Departure:</b> ${startDate}</p>
           ${isApproved ? `
             <hr style="border: 0; border-top: 1px solid #ccc; margin: 10px 0;" />
             <p><b>Assigned Vehicle:</b> ${vehicleName}</p>
