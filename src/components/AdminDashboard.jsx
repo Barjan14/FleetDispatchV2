@@ -53,6 +53,20 @@ const normalizeVehicleLogs = (logs) =>
     };
   });
 
+// ── Helper: format departure time for email ───────────────
+const formatDepartureTime = (datetime) => {
+  if (!datetime) return 'N/A';
+  return new Date(datetime).toLocaleString('en-US', {
+    weekday: 'short',
+    month:   'short',
+    day:     'numeric',
+    year:    'numeric',
+    hour:    '2-digit',
+    minute:  '2-digit',
+    hour12:  true,
+  });
+};
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
 
@@ -91,7 +105,7 @@ export default function AdminDashboard() {
     profile: { employee_id: '', department: '', phone: '' },
   });
 
-  // ── Ref to track if first load is done ───────────────────
+  // ── Ref: tracks whether first load has completed ──────────
   const initialLoadDone = useRef(false);
 
   // ── Toast ─────────────────────────────────────────────────
@@ -103,31 +117,20 @@ export default function AdminDashboard() {
   // ── Auth guard ────────────────────────────────────────────
   useEffect(() => {
     const isAdmin = localStorage.getItem('isAdmin') === 'true';
-    if (!isAdmin) {
-      navigate('/admin-login');
-      return;
-    }
+    if (!isAdmin) { navigate('/admin-login'); return; }
     const stored = localStorage.getItem('adminUser');
     if (stored) setAdminUser(JSON.parse(stored));
   }, [navigate]);
 
   // ── Fetch all data ────────────────────────────────────────
-  // KEY FIX: On first load → show spinner (setLoading)
-  // On subsequent refreshes → update data silently (setIsFetching)
-  // This prevents BookingsPage from unmounting/remounting on refresh
+  // First load  → full spinner via setLoading
+  // Subsequent  → silent background via setIsFetching (no page flicker)
   const fetchAll = useCallback(async () => {
-    // First load: show full spinner
-    // Subsequent: silent background fetch, page stays visible
-    if (initialLoadDone.current) {
-      setIsFetching(true);
-    }
+    if (initialLoadDone.current) setIsFetching(true);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate('/admin-login');
-        return;
-      }
+      if (!session) { navigate('/admin-login'); return; }
 
       const [vRes, uRes, fRes, bRes, dRes, cV, cU, cF, cB, cP, cO] = await Promise.all([
         supabase.from('vehicles').select('*').order('name'),
@@ -152,7 +155,6 @@ export default function AdminDashboard() {
         supabase.from('vehicle_bookings').select('*', { count: 'exact', head: true }).eq('status', 'Ongoing'),
       ]);
 
-      // ✅ Update state in one batch — minimizes re-renders
       setVehicles(vRes.data || []);
       setDrivers(dRes.data || []);
       setBookings(bRes.data || []);
@@ -185,7 +187,6 @@ export default function AdminDashboard() {
       console.error('Fetch Error:', e);
       showToast('Failed to refresh data.', 'err');
     } finally {
-      // First load done — flip the ref so future calls are silent
       if (!initialLoadDone.current) {
         initialLoadDone.current = true;
         setLoading(false);
@@ -220,24 +221,20 @@ export default function AdminDashboard() {
     }
   }, [tab, fetchLogsSilently]);
 
-  // ── Realtime subscription for bookings ───────────────────
-  // This updates bookings in the background without resetting the page
+  // ── Realtime subscription ─────────────────────────────────
+  // Listens for any change to vehicle_bookings and silently refreshes
+  // New bookings appear automatically — no manual refresh needed
   useEffect(() => {
     const channel = supabase
       .channel('bookings-realtime')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'vehicle_bookings' },
-        () => {
-          // Silent refresh — page stays visible, no flicker
-          fetchAll();
-        }
+        () => { fetchAll(); }
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [fetchAll]);
 
   // ── Sorted vehicles ───────────────────────────────────────
@@ -309,9 +306,7 @@ export default function AdminDashboard() {
       showToast('Vehicle saved successfully');
       setModalType('');
       fetchAll();
-    } catch (err) {
-      showToast(err.message, 'err');
-    }
+    } catch (err) { showToast(err.message, 'err'); }
   };
 
   const handleDeleteVehicle = async (id) => {
@@ -356,12 +351,10 @@ export default function AdminDashboard() {
       showToast(isEdit ? 'User updated' : 'User added');
       setModalType('');
       fetchAll();
-    } catch (err) {
-      showToast(err.message, 'err');
-    }
+    } catch (err) { showToast(err.message, 'err'); }
   };
 
-  // ── Booking Actions (MERGED: availability + email) ────────
+  // ── Booking Actions (availability + formatted email) ──────
   const bookingAction = async (id, status, vehicleId = null, driverId = null) => {
     const booking = bookings.find(x => x.id === id);
     if (!booking) return;
@@ -373,7 +366,6 @@ export default function AdminDashboard() {
       if (status === 'Approved') {
         if (vehicleId) updates.vehicle_id = vehicleId;
         if (driverId)  updates.driver_id  = driverId;
-
         if (vehicleId) await supabase.from('vehicles')
           .update({ is_available: false }).eq('id', vehicleId);
         if (driverId) await supabase.from('driver_profiles')
@@ -406,7 +398,6 @@ export default function AdminDashboard() {
 
         console.log(`Triggering ${status} email for:`, booking.email || booking.user?.email);
 
-        // Inside AdminDashboard.jsx -> bookingAction
         const { error: funcError } = await supabase.functions.invoke('send-approval-email', {
           body: {
             userEmail:   booking.email || booking.user?.email,
@@ -414,16 +405,8 @@ export default function AdminDashboard() {
             vehicleName: assignedVehicle?.name || 'N/A',
             driverName:  assignedDriver?.name  || 'N/A',
             destination: booking.destination   || 'Your Destination',
-            
-            startDate:   new Date(booking.start_datetime).toLocaleString('en-US', {
-              weekday: 'short',
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: true
-            }),
+            // ✅ MERGED: formatted departure time from doc 6
+            startDate:   formatDepartureTime(booking.start_datetime),
           },
         });
 
@@ -450,7 +433,7 @@ export default function AdminDashboard() {
     navigate('/admin-login');
   };
 
-  // ── Loading state (first load only) ──────────────────────
+  // ── First load spinner ────────────────────────────────────
   if (loading) return (
     <div className="admin-loading">
       <div className="spinner">Loading System...</div>
@@ -482,11 +465,9 @@ export default function AdminDashboard() {
         <div className="admin-topbar">
           <h1>{NAV.find(n => n.key === tab)?.label}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {/* Subtle refresh indicator — no page flicker */}
+            {/* Subtle sync indicator — no page flicker */}
             {isFetching && (
-              <span style={{ fontSize: 12, color: '#94a3b8', animation: 'pulse 1s infinite' }}>
-                ↻ Syncing...
-              </span>
+              <span style={{ fontSize: 12, color: '#94a3b8' }}>↻ Syncing...</span>
             )}
             <div className="admin-user-menu">
               <button className="admin-user-btn" onClick={() => setShowUserMenu(!showUserMenu)}>
@@ -508,8 +489,8 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ✅ All pages always mounted, just hidden via CSS display:none */}
-        {/* This prevents remounting/state reset on every fetchAll */}
+        {/* All pages always mounted, hidden via display:none */}
+        {/* Prevents remounting/state reset on every fetchAll   */}
         <div style={{ display: tab === 'overview'  ? 'block' : 'none' }}>
           <OverviewPage
             stats={stats}
@@ -545,7 +526,7 @@ export default function AdminDashboard() {
           />
         </div>
 
-        {/* ✅ BookingsPage stays mounted — no more page reset on data refresh */}
+        {/* BookingsPage stays mounted — no reset on data refresh */}
         <div style={{ display: tab === 'bookings' ? 'block' : 'none' }}>
           <BookingsPage
             bookings={bookings}
