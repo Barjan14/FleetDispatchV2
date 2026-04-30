@@ -71,8 +71,8 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
 
   const [tab, setTab]                   = useState('overview');
-  const [loading, setLoading]           = useState(true);   // only true on first load
-  const [isFetching, setIsFetching]     = useState(false);  // silent background refresh
+  const [loading, setLoading]           = useState(true);
+  const [isFetching, setIsFetching]     = useState(false);
   const [toast, setToast]               = useState({ msg: '', type: '' });
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [vehicleSort, setVehicleSort]   = useState('name_asc');
@@ -105,8 +105,9 @@ export default function AdminDashboard() {
     profile: { employee_id: '', department: '', phone: '' },
   });
 
-  // ── Ref: tracks whether first load has completed ──────────
   const initialLoadDone = useRef(false);
+  // ── Debounce timer ref — prevents rapid-fire refreshes ───
+  const debounceTimer = useRef(null);
 
   // ── Toast ─────────────────────────────────────────────────
   const showToast = (msg, type = 'ok') => {
@@ -123,8 +124,6 @@ export default function AdminDashboard() {
   }, [navigate]);
 
   // ── Fetch all data ────────────────────────────────────────
-  // First load  → full spinner via setLoading
-  // Subsequent  → silent background via setIsFetching (no page flicker)
   const fetchAll = useCallback(async () => {
     if (initialLoadDone.current) setIsFetching(true);
 
@@ -221,20 +220,33 @@ export default function AdminDashboard() {
     }
   }, [tab, fetchLogsSilently]);
 
-  // ── Realtime subscription ─────────────────────────────────
-  // Listens for any change to vehicle_bookings and silently refreshes
-  // New bookings appear automatically — no manual refresh needed
+  // ── Realtime subscription with debounce ───────────────────
+  // Debounce prevents multiple rapid fetchAll() calls when
+  // several DB rows update at once (e.g. approve booking updates
+  // vehicle_bookings + vehicles + driver_profiles simultaneously)
   useEffect(() => {
     const channel = supabase
       .channel('bookings-realtime')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'vehicle_bookings' },
-        () => { fetchAll(); }
+        () => {
+          // Clear any pending timer and reset — only fires once
+          // after the last change, not once per change
+          if (debounceTimer.current) clearTimeout(debounceTimer.current);
+          debounceTimer.current = setTimeout(() => {
+            fetchAll();
+          }, 800); // wait 800ms after last change before refreshing
+        }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Realtime status:', status);
+      });
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+      supabase.removeChannel(channel);
+    };
   }, [fetchAll]);
 
   // ── Sorted vehicles ───────────────────────────────────────
@@ -362,7 +374,6 @@ export default function AdminDashboard() {
     const updates = { status };
 
     try {
-      // 1. Update vehicle & driver availability
       if (status === 'Approved') {
         if (vehicleId) updates.vehicle_id = vehicleId;
         if (driverId)  updates.driver_id  = driverId;
@@ -387,11 +398,9 @@ export default function AdminDashboard() {
           .update({ availability: 'Available', assigned_vehicle_id: null }).eq('id', booking.driver_id);
       }
 
-      // 2. Update the booking row
       const { error } = await supabase.from('vehicle_bookings').update(updates).eq('id', id);
       if (error) throw error;
 
-      // 3. Send email notification (Approved or Rejected)
       if (status === 'Approved' || status === 'Rejected') {
         const assignedVehicle = vehicles.find(v => String(v.id) === String(vehicleId));
         const assignedDriver  = drivers.find(d => String(d.id) === String(driverId));
@@ -405,7 +414,6 @@ export default function AdminDashboard() {
             vehicleName: assignedVehicle?.name || 'N/A',
             driverName:  assignedDriver?.name  || 'N/A',
             destination: booking.destination   || 'Your Destination',
-            // ✅ MERGED: formatted departure time from doc 6
             startDate:   formatDepartureTime(booking.start_datetime),
           },
         });
@@ -465,7 +473,6 @@ export default function AdminDashboard() {
         <div className="admin-topbar">
           <h1>{NAV.find(n => n.key === tab)?.label}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {/* Subtle sync indicator — no page flicker */}
             {isFetching && (
               <span style={{ fontSize: 12, color: '#94a3b8' }}>↻ Syncing...</span>
             )}
@@ -489,8 +496,6 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* All pages always mounted, hidden via display:none */}
-        {/* Prevents remounting/state reset on every fetchAll   */}
         <div style={{ display: tab === 'overview'  ? 'block' : 'none' }}>
           <OverviewPage
             stats={stats}
@@ -526,7 +531,6 @@ export default function AdminDashboard() {
           />
         </div>
 
-        {/* BookingsPage stays mounted — no reset on data refresh */}
         <div style={{ display: tab === 'bookings' ? 'block' : 'none' }}>
           <BookingsPage
             bookings={bookings}
