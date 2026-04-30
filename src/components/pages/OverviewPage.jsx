@@ -32,9 +32,11 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
 
   // Calculations for Top Boxes
   const availableVehicles = vehicles.filter(v => v.is_available).length;
-  const inUseVehicles = vehicles.length - availableVehicles;
   const availableDrivers = drivers.filter(d => d.availability === 'Available').length;
   const completedTrips = bookings.filter(b => b.status === 'Returned' || b.status === 'Completed').length;
+  
+  // ✅ NEW: Count trips that are Approved but waiting to be marked Ongoing
+  const upcomingTrips = bookings.filter(b => b.status === 'Approved').length;
 
   // Condition Calculations for the Bar Graph
   const goodCondition = vehicles.filter(v => v.condition === 'Good').length;
@@ -62,11 +64,10 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
   };
 
   return (
-    // ✅ STRICT HEIGHT ENFORCEMENT: Reduced gaps, added boxSizing and overflow hidden.
+    // STRICT HEIGHT ENFORCEMENT: Reduced gaps, added boxSizing and overflow hidden.
     <div style={{ padding: '0 20px 16px 20px', display: 'flex', flexDirection: 'column', gap: '12px', height: 'calc(100vh - 90px)', boxSizing: 'border-box', overflow: 'hidden' }}>
       
       {/* ================= 1. TOP 4 DASHBOARD BOXES ================= */}
-      {/* ✅ COMPACTED: Shorter height, smaller gaps */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', flexShrink: 0 }}>
         
         {/* Box 1: Available Vehicles */}
@@ -169,7 +170,6 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
               ))}
             </div>
 
-            {/* ✅ COMPACTED: Reduced gaps and padding inside cells so 6 rows don't overflow */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gridTemplateRows: `repeat(${totalSlots / 7}, 1fr)`, gap: '4px', flex: 1, minHeight: 0 }}>
               {Array.from({ length: totalSlots }).map((_, i) => {
                 const dayNumber = i - firstDayOfMonth + 1;
@@ -188,7 +188,7 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
                       {dayNumber}
                     </span>
                     
-                    {/* Booking Dots (Slightly smaller, showing fewer to save vertical space) */}
+                    {/* Booking Dots */}
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px', marginTop: '2px' }}>
                       {dayBookings.slice(0, 4).map((b, index) => {
                         const dept = b.department || b.user?.department || 'Unknown';
@@ -205,16 +205,15 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
           </div>
         </div>
 
-        {/* RIGHT: INSIGHT WIDGETS */}
-        {/* ✅ COMPACTED: Scaled down fonts and paddings on the right sidebar */}
+        {/* RIGHT: INSIGHT WIDGETS (Now 3 boxes!) */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px', minHeight: 0 }}>
           
+          {/* 1. Pending Approvals */}
           <div className="admin-card" style={{ margin: 0, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <div className="admin-card-header" style={{ backgroundColor: '#f8fafc', padding: '8px 12px', flexShrink: 0 }}>
               <h3 style={{ fontSize: '12px', margin: 0 }}>Needs Attention</h3>
             </div>
             <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, minHeight: 0 }}>
-              
               <div 
                 onClick={() => goTo('bookings')}
                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', cursor: 'pointer' }}
@@ -228,12 +227,31 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
             </div>
           </div>
 
+          {/* 2. ✅ NEW: Scheduled / Waiting for Dispatch */}
+          <div className="admin-card" style={{ margin: 0, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <div className="admin-card-header" style={{ backgroundColor: '#f8fafc', padding: '8px 12px', flexShrink: 0 }}>
+              <h3 style={{ fontSize: '12px', margin: 0 }}>Fleet Dispatch</h3>
+            </div>
+            <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, minHeight: 0 }}>
+              <div 
+                onClick={() => goTo('fleets')}
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', cursor: 'pointer' }}
+              >
+                <div>
+                  <div className="admin-bold" style={{ color: '#166534', fontSize: '13px' }}>Scheduled Trips</div>
+                  <div className="admin-muted-sm" style={{ color: '#15803d', fontSize: '11px' }}>Ready for dispatch</div>
+                </div>
+                <h2 style={{ margin: 0, color: '#16a34a', fontSize: '24px' }}>{upcomingTrips}</h2>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Live Operations */}
           <div className="admin-card" style={{ margin: 0, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <div className="admin-card-header" style={{ backgroundColor: '#f8fafc', padding: '8px 12px', flexShrink: 0 }}>
               <h3 style={{ fontSize: '12px', margin: 0 }}>Live Operations</h3>
             </div>
             <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, minHeight: 0 }}>
-              
               <div 
                 onClick={() => goTo('fleets')}
                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', cursor: 'pointer' }}
