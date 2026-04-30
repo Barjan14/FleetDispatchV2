@@ -394,3 +394,37 @@ CREATE TRIGGER trg_vehicle_booking_trip_logs
 AFTER UPDATE OF status ON public.vehicle_bookings
 FOR EACH ROW
 EXECUTE FUNCTION log_vehicle_booking_to_trip_logs();
+
+-- 1. ENABLE THE CRON EXTENSION
+-- This gives your database the ability to run background timers
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+
+-- 2. CREATE THE AUTO-REJECT FUNCTION
+-- This function finds 'Pending' bookings where the start time has passed and rejects them
+CREATE OR REPLACE FUNCTION auto_reject_expired_bookings()
+RETURNS void AS $$
+BEGIN
+  UPDATE public.vehicle_bookings
+  SET 
+    status = 'Rejected',
+    -- Appends a system note so you know why it was rejected, while keeping any existing notes
+    admin_notes = CASE 
+        WHEN admin_notes IS NULL OR admin_notes = '' 
+        THEN '[System]: Auto-rejected because the departure time passed without admin approval.'
+        ELSE admin_notes || ' | [System]: Auto-rejected because the departure time passed without admin approval.'
+    END
+  WHERE 
+    status = 'Pending' 
+    AND start_datetime <= now();
+END;
+$$ LANGUAGE plpgsql;
+
+-- 3. SCHEDULE THE BACKGROUND JOB
+-- This tells the database to run the function above every 1 minute ('* * * * *')
+SELECT cron.schedule(
+  'auto-reject-expired-bookings-job', 
+  '* * * * *',                        
+  'SELECT auto_reject_expired_bookings();' 
+);
+
+SELECT cron.unschedule('auto-reject-expired-bookings-job');

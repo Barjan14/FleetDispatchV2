@@ -118,7 +118,7 @@ export default function BookingsPage({
           className="admin-btn admin-btn-outline" 
           style={{ padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
         >
-          <Icons.Refresh /> Refresh
+          <Icons.Refresh /> Sync
         </button>
       </div>
 
