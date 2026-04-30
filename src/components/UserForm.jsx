@@ -408,25 +408,6 @@ export default function DispatchForm() {
                     <label>Purpose Details (Optional)</label>
                     <textarea value={form.purposeDetails} onChange={e => set('purposeDetails', e.target.value)} placeholder="Provide additional details about your errand or trip..." rows={3} />
                   </div>
-                  <div className="fd-field full">
-                    <label>Upload Document or Image (Optional)</label>
-                    <div style={{ border: '2px dashed #ddd', borderRadius: 6, padding: 16, textAlign: 'center' }}>
-                      {documentPreview && (
-                        <div style={{ marginBottom: 12 }}>
-                          {documentFile?.type.startsWith('image/') ? (
-                            <img src={documentPreview} alt="Preview" style={{ maxWidth: '100%', maxHeight: 150, borderRadius: 4 }} />
-                          ) : (
-                            <div style={{ color: '#666' }}>📄 {documentFile?.name}</div>
-                          )}
-                        </div>
-                      )}
-                      <input type="file" onChange={handleDocumentUpload} disabled={uploading} style={{ display: 'none' }} id="doc-upload" accept="image/*,.pdf,.doc,.docx" />
-                      <label htmlFor="doc-upload" style={{ cursor: uploading ? 'not-allowed' : 'pointer', display: 'block', padding: 8 }}>
-                        {uploading ? 'Uploading...' : documentFile ? 'Change File' : 'Click to upload'}
-                      </label>
-                      <div style={{ fontSize: 12, color: '#999', marginTop: 8 }}>Max 5MB • Images, PDF, Word docs</div>
-                    </div>
-                  </div>
                 </div>
               </div>
             )}
