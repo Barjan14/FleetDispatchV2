@@ -12,8 +12,7 @@ import DriversPage from './pages/DriversPage';
 import FleetsPage from './pages/FleetsPage';
 import VehicleLogsPage from './pages/VehicleLogsPage';
 import FinancialPage from './pages/FinancialPage';
-import InsurancePage from './pages/InsurancePage';
-import SafetyChecksPage from './pages/SafetyChecksPage';
+
 
 // Modal Components
 import VehicleDetailsModal from './modals/VehicleDetailsModal';
@@ -33,8 +32,6 @@ const NAV = [
   { key: 'fleets',    icon: '🗂️', label: 'Fleets'             },
   { key: 'logs',      icon: '📋', label: 'Logs'               },
   { key: 'financial', icon: '💰', label: 'Financial Data'     },
-  { key: 'insurance', icon: '🛡️', label: 'Insurance Records'  },
-  { key: 'safety',    icon: '✅', label: 'Safety Checks'      },
 ];
 
 const normalizeVehicleLogs = (logs) =>
@@ -577,13 +574,6 @@ export default function AdminDashboard() {
           <FinancialPage />
         </div>
 
-        <div style={{ display: tab === 'insurance' ? 'block' : 'none' }}>
-          <InsurancePage />
-        </div>
-
-        <div style={{ display: tab === 'safety' ? 'block' : 'none' }}>
-          <SafetyChecksPage />
-        </div>
       </main>
 
       {/* ── Modals ── */}
