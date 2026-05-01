@@ -1,4 +1,8 @@
 import React, { useState, useMemo } from 'react';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable'; // Updated Import
 
 // Clean, professional SVG icons
 const Icons = {
@@ -27,17 +31,22 @@ const Icons = {
       <line x1="5" y1="12" x2="19" y2="12"></line>
       <polyline points="12 5 19 12 12 19"></polyline>
     </svg>
+  ),
+  Download: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
   )
 };
 
-// Helper to format dates cleanly
 function formatShortDate(dateString) {
   if (!dateString) return '—';
   const options = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
   return new Date(dateString).toLocaleDateString('en-US', options);
 }
 
-// Helper for status badges
 function getStatusBadge(status) {
   const map = {
     Scheduled: 'b-pending',
@@ -51,7 +60,6 @@ function getStatusBadge(status) {
 export default function VehicleLogsPage({ logs = [], loading, tripLogs = [], onRefresh }) {
   const [sortOrder, setSortOrder] = useState('newest');
 
-  // Intelligent Sorting Logic
   const sortedLogs = useMemo(() => {
     const list = [...tripLogs];
     switch (sortOrder) {
@@ -61,6 +69,58 @@ export default function VehicleLogsPage({ logs = [], loading, tripLogs = [], onR
       default: return list;
     }
   }, [tripLogs, sortOrder]);
+
+  const exportToExcel = () => {
+    const dataToExport = sortedLogs.map(log => ({
+      'Log ID': log.id,
+      'Purpose': log.purpose || 'N/A',
+      'Vehicle': log.vehicles?.name || log.vehicle?.name || 'N/A',
+      'Driver': log.driver_name || 'N/A',
+      'Origin': log.origin || 'N/A',
+      'Destination': log.destination || 'N/A',
+      'Start Time': formatShortDate(log.start_datetime),
+      'End Time': formatShortDate(log.end_datetime),
+      'Status': log.status,
+      'Date Logged': new Date(log.created_at).toLocaleDateString()
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Trip Logs");
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(data, `Trip_Logs_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Vehicle Trip Logs Report", 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 28);
+
+    const tableColumn = ["ID", "Vehicle", "Driver", "Route", "Schedule", "Status"];
+    const tableRows = sortedLogs.map(log => [
+      `#${log.id}`,
+      log.vehicles?.name || log.vehicle?.name || 'N/A',
+      log.driver_name || 'N/A',
+      `${log.origin} -> ${log.destination}`,
+      `${formatShortDate(log.start_datetime)}`,
+      log.status
+    ]);
+
+    // ✅ FIXED: Using autoTable function directly to avoid "is not a function" error
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 35,
+      theme: 'striped',
+      headStyles: { fillColor: [37, 99, 235] },
+      styles: { fontSize: 8 },
+    });
+
+    doc.save(`Trip_Logs_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
 
   if (loading) {
     return (
@@ -83,8 +143,29 @@ export default function VehicleLogsPage({ logs = [], loading, tripLogs = [], onR
           </span>
         </h3>
 
-        {/* ✅ CHANGED: Tabs and Refresh removed, replaced with a clean Sorting Dropdown */}
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            {/* Note: Ensure parent containers of these buttons are NOT buttons themselves */}
+            <button 
+              type="button"
+              onClick={exportToExcel}
+              className="admin-btn admin-btn-outline" 
+              style={{ padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', color: '#16a34a', borderColor: '#bbf7d0' }}
+            >
+              <Icons.Download /> Excel
+            </button>
+            <button 
+              type="button"
+              onClick={exportToPDF}
+              className="admin-btn admin-btn-outline" 
+              style={{ padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', color: '#dc2626', borderColor: '#fecaca' }}
+            >
+              <Icons.Download /> PDF
+            </button>
+          </div>
+
+          <div style={{ width: '1px', height: '24px', background: '#e2e8f0', margin: '0 4px' }}></div>
+
           <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>Sort By:</span>
           <select
             value={sortOrder}
@@ -105,74 +186,54 @@ export default function VehicleLogsPage({ logs = [], loading, tripLogs = [], onR
             <tr>
               <th>Log Info</th>
               <th>Assignment</th>
-              <th>Route (Origin ➔ Dest)</th>
+              <th>Route</th>
               <th>Schedule</th>
               <th>Status</th>
               <th>Logged At</th>
             </tr>
           </thead>
-
           <tbody>
             {sortedLogs.length === 0 ? (
               <tr>
-                <td colSpan={6} className="admin-empty" style={{ padding: '40px' }}>
-                  No trip logs recorded yet.
-                </td>
+                <td colSpan={6} className="admin-empty" style={{ padding: '40px' }}>No trip logs recorded yet.</td>
               </tr>
             ) : (
               sortedLogs.map(log => (
-                <tr key={log.id} style={{ transition: 'background-color 0.2s' }}>
-                  
-                  {/* 1. LOG INFO (ID + Purpose) */}
-                  <td style={{ verticalAlign: 'middle' }}>
-                    <div className="admin-bold" style={{ color: '#4b5563' }}>#{log.id}</div>
-                    <div className="admin-muted-sm" style={{ maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={log.purpose}>
+                <tr key={log.id}>
+                  <td>
+                    <div className="admin-bold">#{log.id}</div>
+                    <div className="admin-muted-sm" style={{ maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {log.purpose || 'No Purpose'}
                     </div>
                   </td>
-
-                  {/* 2. ASSIGNMENT (Vehicle + Driver) */}
-                  <td style={{ verticalAlign: 'middle', lineHeight: '1.5' }}>
+                  <td>
                     <div className="admin-bold-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Icons.Car /> {log.vehicles?.name || log.vehicle?.name || 'Unknown Vehicle'}
+                      <Icons.Car /> {log.vehicles?.name || log.vehicle?.name || 'Unknown'}
                     </div>
-                    <div className="admin-muted-sm" style={{ color: '#2563eb', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                      <Icons.User /> {log.driver_name || 'Unknown Driver'}
+                    <div className="admin-muted-sm" style={{ color: '#2563eb', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Icons.User /> {log.driver_name || 'Unknown'}
                     </div>
                   </td>
-
-                  {/* 3. ROUTE (Origin -> Destination) */}
-                  <td style={{ verticalAlign: 'middle' }}>
-                    <div className="admin-bold" style={{ color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <td>
+                    <div className="admin-bold" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Icons.MapPin /> {log.origin || '—'}
                     </div>
-                    <div className="admin-muted-sm" style={{ color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px', paddingLeft: '4px' }}>
+                    <div className="admin-muted-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Icons.ArrowRight /> {log.destination || '—'}
                     </div>
                   </td>
-
-                  {/* 4. SCHEDULE (Start -> End) */}
-                  <td style={{ verticalAlign: 'middle' }}>
-                    <div className="admin-bold-sm" style={{ color: '#059669' }}>
-                      {formatShortDate(log.start_datetime)}
-                    </div>
-                    <div className="admin-muted-sm">
-                      to {formatShortDate(log.end_datetime)}
-                    </div>
+                  <td>
+                    <div className="admin-bold-sm" style={{ color: '#059669' }}>{formatShortDate(log.start_datetime)}</div>
+                    <div className="admin-muted-sm">to {formatShortDate(log.end_datetime)}</div>
                   </td>
-
-                  {/* 5. STATUS */}
-                  <td style={{ verticalAlign: 'middle' }}>
-                    <span className={`admin-badge-mini ${getStatusBadge(log.status)}`} style={{ fontSize: '11px', padding: '4px 8px' }}>
+                  <td>
+                    <span className={`admin-badge-mini ${getStatusBadge(log.status)}`}>
                       {log.status}
                     </span>
                   </td>
-
-                  {/* 6. TIMESTAMP */}
-                  <td className="admin-muted-sm" style={{ verticalAlign: 'middle' }}>
+                  <td className="admin-muted-sm">
                     {formatShortDate(log.created_at)}
                   </td>
-                  
                 </tr>
               ))
             )}
