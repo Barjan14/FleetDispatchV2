@@ -190,6 +190,23 @@ export default function DispatchForm() {
 
       if (error) throw error
 
+      // ─── INSERT THE NEW CODE HERE ───
+      try {
+        await supabase.functions.invoke('notify-admin-booking', {
+          body: {
+            employeeName: form.employeeName,
+            department: form.department,
+            destination: form.destination,
+            purpose: form.purpose,
+            startDate: new Date(`${form.requestDate}T${form.departureTime}`).toLocaleString(),
+          },
+        })
+      } catch (notifyError) {
+        console.error('Admin notification failed:', notifyError)
+        // We don't throw here so the user still sees their booking was successful
+      }
+      // ────────────────────────────────
+
       setStatus('Pending')
       setSubmitted(true)
       setShowSummary(true)
