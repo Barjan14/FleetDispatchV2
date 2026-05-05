@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../supabaseClient';
 
-// Compacted SVG Icons (scaled down slightly from 24px to 20px)
+// Compacted SVG Icons
 const Icons = {
   Car: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>,
   User: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>,
   CheckCircle: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>,
   BarChart: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></svg>,
   ChevronLeft: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"></polyline></svg>,
-  ChevronRight: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+  ChevronRight: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"></polyline></svg>,
+  Wallet: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></svg>
 };
 
 // Department Colors for Calendar Legend
@@ -22,20 +24,56 @@ const getDeptColor = (dept) => {
   return colors[dept] || '#64748b'; // Gray fallback
 };
 
+// Formatter for Philippine Peso
+const fmt = (n) => '₱' + Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
 export default function OverviewPage({ stats = {}, bookings = [], vehicles = [], drivers = [], onNavigate }) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  
+  // Store financial totals
+  const [finances, setFinances] = useState({ fuel: 0, maint: 0, repair: 0, total: 0 });
 
   // Safe navigation helper
   const goTo = (tab) => {
     if (onNavigate) onNavigate(tab);
   };
 
+  // ✅ LIVE AUTO-UPDATE: Fetch financial totals and listen for any changes!
+  useEffect(() => {
+    const fetchFinances = async () => {
+      try {
+        const [fRes, mRes, rRes] = await Promise.all([
+          supabase.from('fuel_records').select('total_cost'),
+          supabase.from('maintenance_costs').select('amount'),
+          supabase.from('repair_records').select('repair_cost')
+        ]);
+        
+        const fuel = (fRes.data || []).reduce((acc, row) => acc + Number(row.total_cost || 0), 0);
+        const maint = (mRes.data || []).reduce((acc, row) => acc + Number(row.amount || 0), 0);
+        const repair = (rRes.data || []).reduce((acc, row) => acc + Number(row.repair_cost || 0), 0);
+        
+        setFinances({ fuel, maint, repair, total: fuel + maint + repair });
+      } catch (err) {
+        console.error("Failed to load financial overview", err);
+      }
+    };
+
+    fetchFinances(); // Initial Load
+
+    // Silently listen to the database and auto-refresh if anything is added/edited/deleted
+    const channel = supabase.channel('overview-finances-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fuel_records' }, () => { fetchFinances(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'maintenance_costs' }, () => { fetchFinances(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'repair_records' }, () => { fetchFinances(); })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   // Calculations for Top Boxes
   const availableVehicles = vehicles.filter(v => v.is_available).length;
   const availableDrivers = drivers.filter(d => d.availability === 'Available').length;
   const completedTrips = bookings.filter(b => b.status === 'Returned' || b.status === 'Completed').length;
-  
-  // ✅ NEW: Count trips that are Approved but waiting to be marked Ongoing
   const upcomingTrips = bookings.filter(b => b.status === 'Approved').length;
 
   // Condition Calculations for the Bar Graph
@@ -49,8 +87,6 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = new Date(year, month, 1).getDay();
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
-  // Determines if calendar needs 5 or 6 rows to fit the days
   const totalSlots = firstDayOfMonth + daysInMonth > 35 ? 42 : 35;
 
   const getBookingsForDay = (day) => {
@@ -64,18 +100,12 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
   };
 
   return (
-    // STRICT HEIGHT ENFORCEMENT: Reduced gaps, added boxSizing and overflow hidden.
     <div style={{ padding: '0 20px 16px 20px', display: 'flex', flexDirection: 'column', gap: '12px', height: 'calc(100vh - 90px)', boxSizing: 'border-box', overflow: 'hidden' }}>
       
       {/* ================= 1. TOP 4 DASHBOARD BOXES ================= */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', flexShrink: 0 }}>
         
-        {/* Box 1: Available Vehicles */}
-        <div 
-          className="admin-card" 
-          onClick={() => goTo('vehicles')}
-          style={{ margin: 0, padding: '12px', display: 'flex', alignItems: 'center', gap: '12px', borderLeft: '4px solid #10b981', cursor: 'pointer' }}
-        >
+        <div className="admin-card" onClick={() => goTo('vehicles')} style={{ margin: 0, padding: '12px', display: 'flex', alignItems: 'center', gap: '12px', borderLeft: '4px solid #10b981', cursor: 'pointer' }}>
           <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: '#ecfdf5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icons.Car /></div>
           <div>
             <div className="admin-muted-sm" style={{ fontWeight: '700', letterSpacing: '0.05em', fontSize: '10px' }}>AVAILABLE VEHICLES</div>
@@ -83,12 +113,7 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
           </div>
         </div>
 
-        {/* Box 2: Available Drivers */}
-        <div 
-          className="admin-card" 
-          onClick={() => goTo('drivers')}
-          style={{ margin: 0, padding: '12px', display: 'flex', alignItems: 'center', gap: '12px', borderLeft: '4px solid #3b82f6', cursor: 'pointer' }}
-        >
+        <div className="admin-card" onClick={() => goTo('drivers')} style={{ margin: 0, padding: '12px', display: 'flex', alignItems: 'center', gap: '12px', borderLeft: '4px solid #3b82f6', cursor: 'pointer' }}>
           <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: '#eff6ff', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icons.User /></div>
           <div>
             <div className="admin-muted-sm" style={{ fontWeight: '700', letterSpacing: '0.05em', fontSize: '10px' }}>AVAILABLE DRIVERS</div>
@@ -96,12 +121,7 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
           </div>
         </div>
 
-        {/* Box 3: Booked Completed */}
-        <div 
-          className="admin-card" 
-          onClick={() => goTo('logs')}
-          style={{ margin: 0, padding: '12px', display: 'flex', alignItems: 'center', gap: '12px', borderLeft: '4px solid #8b5cf6', cursor: 'pointer' }}
-        >
+        <div className="admin-card" onClick={() => goTo('logs')} style={{ margin: 0, padding: '12px', display: 'flex', alignItems: 'center', gap: '12px', borderLeft: '4px solid #8b5cf6', cursor: 'pointer' }}>
           <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: '#f5f3ff', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icons.CheckCircle /></div>
           <div>
             <div className="admin-muted-sm" style={{ fontWeight: '700', letterSpacing: '0.05em', fontSize: '10px' }}>COMPLETED TRIPS</div>
@@ -109,12 +129,7 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
           </div>
         </div>
 
-        {/* Box 4: Vehicle Condition Bar Graph */}
-        <div 
-          className="admin-card" 
-          onClick={() => goTo('vehicles')}
-          style={{ margin: 0, padding: '8px 12px', display: 'flex', flexDirection: 'column', justifyContent: 'center', cursor: 'pointer' }}
-        >
+        <div className="admin-card" onClick={() => goTo('vehicles')} style={{ margin: 0, padding: '8px 12px', display: 'flex', flexDirection: 'column', justifyContent: 'center', cursor: 'pointer' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', color: '#64748b' }}>
             <span className="admin-muted-sm" style={{ fontWeight: '700', letterSpacing: '0.05em', fontSize: '10px' }}>VEHICLE CONDITION</span>
             <Icons.BarChart />
@@ -144,7 +159,6 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
         
         {/* LEFT: CALENDAR MODULE */}
         <div className="admin-card" style={{ margin: 0, flex: 3, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-          
           <div className="admin-card-header" style={{ padding: '8px 12px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', flexShrink: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <button className="admin-btn admin-btn-outline" style={{ padding: '2px 6px' }} onClick={() => setCurrentDate(new Date(year, month - 1, 1))}><Icons.ChevronLeft /></button>
@@ -152,7 +166,6 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
               <button className="admin-btn admin-btn-outline" style={{ padding: '2px 6px' }} onClick={() => setCurrentDate(new Date(year, month + 1, 1))}><Icons.ChevronRight /></button>
             </div>
             
-            {/* Calendar Legend */}
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               {['IT', 'HR', 'Sales', 'Logistics', 'Executive'].map(dept => (
                 <div key={dept} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', fontWeight: '700', color: '#64748b' }}>
@@ -162,7 +175,6 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
             </div>
           </div>
           
-          {/* Calendar Body Grid */}
           <div style={{ padding: '8px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', paddingBottom: '4px', flexShrink: 0 }}>
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
@@ -188,7 +200,6 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
                       {dayNumber}
                     </span>
                     
-                    {/* Booking Dots */}
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px', marginTop: '2px' }}>
                       {dayBookings.slice(0, 4).map((b, index) => {
                         const dept = b.department || b.user?.department || 'Unknown';
@@ -205,62 +216,75 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
           </div>
         </div>
 
-        {/* RIGHT: INSIGHT WIDGETS (Now 3 boxes!) */}
+        {/* RIGHT: INSIGHT WIDGETS */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px', minHeight: 0 }}>
           
-          {/* 1. Pending Approvals */}
-          <div className="admin-card" style={{ margin: 0, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            <div className="admin-card-header" style={{ backgroundColor: '#f8fafc', padding: '8px 12px', flexShrink: 0 }}>
-              <h3 style={{ fontSize: '12px', margin: 0 }}>Needs Attention</h3>
+          {/* COMPRESSED DISPATCH OPERATIONS */}
+          <div className="admin-card" style={{ margin: 0, display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+            <div className="admin-card-header" style={{ backgroundColor: '#f8fafc', padding: '8px 12px' }}>
+              <h3 style={{ fontSize: '12px', margin: 0 }}>Dispatch Operations</h3>
             </div>
-            <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, minHeight: 0 }}>
-              <div 
-                onClick={() => goTo('bookings')}
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', cursor: 'pointer' }}
-              >
+            <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              
+              <div onClick={() => goTo('bookings')} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', cursor: 'pointer' }}>
                 <div>
                   <div className="admin-bold" style={{ color: '#92400e', fontSize: '13px' }}>Pending Approvals</div>
                   <div className="admin-muted-sm" style={{ color: '#b45309', fontSize: '11px' }}>Awaiting review</div>
                 </div>
-                <h2 style={{ margin: 0, color: '#d97706', fontSize: '24px' }}>{stats.pendingBookings || 0}</h2>
+                <h2 style={{ margin: 0, color: '#d97706', fontSize: '20px' }}>{stats.pendingBookings || 0}</h2>
               </div>
-            </div>
-          </div>
 
-          {/* 2. ✅ NEW: Scheduled / Waiting for Dispatch */}
-          <div className="admin-card" style={{ margin: 0, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            <div className="admin-card-header" style={{ backgroundColor: '#f8fafc', padding: '8px 12px', flexShrink: 0 }}>
-              <h3 style={{ fontSize: '12px', margin: 0 }}>Fleet Dispatch</h3>
-            </div>
-            <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, minHeight: 0 }}>
-              <div 
-                onClick={() => goTo('fleets')}
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', cursor: 'pointer' }}
-              >
+              <div onClick={() => goTo('fleets')} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', cursor: 'pointer' }}>
                 <div>
                   <div className="admin-bold" style={{ color: '#166534', fontSize: '13px' }}>Scheduled Trips</div>
                   <div className="admin-muted-sm" style={{ color: '#15803d', fontSize: '11px' }}>Ready for dispatch</div>
                 </div>
-                <h2 style={{ margin: 0, color: '#16a34a', fontSize: '24px' }}>{upcomingTrips}</h2>
+                <h2 style={{ margin: 0, color: '#16a34a', fontSize: '20px' }}>{upcomingTrips}</h2>
               </div>
-            </div>
-          </div>
 
-          {/* 3. Live Operations */}
-          <div className="admin-card" style={{ margin: 0, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            <div className="admin-card-header" style={{ backgroundColor: '#f8fafc', padding: '8px 12px', flexShrink: 0 }}>
-              <h3 style={{ fontSize: '12px', margin: 0 }}>Live Operations</h3>
-            </div>
-            <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, minHeight: 0 }}>
-              <div 
-                onClick={() => goTo('fleets')}
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', cursor: 'pointer' }}
-              >
+              <div onClick={() => goTo('fleets')} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', cursor: 'pointer' }}>
                 <div>
                   <div className="admin-bold" style={{ color: '#1e40af', fontSize: '13px' }}>Ongoing Trips</div>
                   <div className="admin-muted-sm" style={{ color: '#2563eb', fontSize: '11px' }}>On the road</div>
                 </div>
-                <h2 style={{ margin: 0, color: '#3b82f6', fontSize: '24px' }}>{stats.ongoingBookings || 0}</h2>
+                <h2 style={{ margin: 0, color: '#3b82f6', fontSize: '20px' }}>{stats.ongoingBookings || 0}</h2>
+              </div>
+
+            </div>
+          </div>
+
+          {/* FINANCIAL SUMMARY CARD (Fixed Overflow Issue) */}
+          <div className="admin-card" style={{ margin: 0, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <div className="admin-card-header" style={{ backgroundColor: '#f8fafc', padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+              <h3 style={{ fontSize: '12px', margin: 0 }}>Financial Summary</h3>
+              <span style={{ color: '#64748b' }}><Icons.Wallet /></span>
+            </div>
+            
+            <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflowY: 'auto' }}>
+              <div onClick={() => goTo('financial')} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+                
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', marginBottom: '10px' }}>
+                  <h2 style={{ margin: 0, fontSize: '24px', color: '#0f172a', fontWeight: '900', letterSpacing: '-0.5px', lineHeight: '1' }}>{fmt(finances.total)}</h2>
+                  <span style={{ fontSize: '10px', color: '#64748b', marginBottom: '2px', fontWeight: '800', letterSpacing: '0.5px' }}>TOTAL EXPENSES</span>
+                </div>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, justifyContent: 'flex-start' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', fontWeight: '700', color: '#1e40af', paddingBottom: '6px', borderBottom: '1px dashed #e2e8f0' }}>
+                    <span>⛽ Fuel</span>
+                    <span>{fmt(finances.fuel)}</span>
+                  </div>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', fontWeight: '700', color: '#854d0e', paddingBottom: '6px', borderBottom: '1px dashed #e2e8f0' }}>
+                    <span>🔧 Maintenance</span>
+                    <span>{fmt(finances.maint)}</span>
+                  </div>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', fontWeight: '700', color: '#991b1b', paddingBottom: '2px' }}>
+                    <span>🛠️ Repairs</span>
+                    <span>{fmt(finances.repair)}</span>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
