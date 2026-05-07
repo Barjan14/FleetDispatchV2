@@ -265,7 +265,9 @@ export default function DispatchForm() {
         {/* Header */}
         <header className="fd-header-modern">
           <div className="fd-header-left">
-            <div className="fd-logo"><TruckIcon /></div>
+            <div className="fd-logo">
+              <img src="/assets/images/Company_Logo.png" alt="DAR Logo" />
+            </div>
             <div className="fd-header-info">
               <h1>Vehicle Request</h1>
               <span className="fd-date">

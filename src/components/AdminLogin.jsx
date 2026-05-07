@@ -3,13 +3,12 @@ import '../styles/AdminLogin.css';
 import { supabase } from '../supabaseClient';
 
 const AdminLogin = () => {
-  const [username, setUsername] = useState('');   // holds email value
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [exitAnimation, setExitAnimation] = useState(false);
-  const [headerVisible] = useState(true);
 
   const navigateTo = (url) => {
     setExitAnimation(true);
@@ -22,7 +21,6 @@ const AdminLogin = () => {
     setIsLoading(true);
 
     try {
-      // 1. Sign in via Supabase Auth (username field = email)
       const { data: authData, error: authError } =
         await supabase.auth.signInWithPassword({ email: username, password });
 
@@ -31,7 +29,6 @@ const AdminLogin = () => {
         return;
       }
 
-      // 2. Check role in employee_profiles — must be 'admin'
       const { data: profile, error: profileError } = await supabase
         .from('employee_profiles')
         .select('role')
@@ -44,7 +41,6 @@ const AdminLogin = () => {
         return;
       }
 
-      // 3. Persist session — same localStorage keys the dashboard already reads
       localStorage.setItem('adminToken', authData.session.access_token);
       localStorage.setItem('isAdmin', 'true');
       localStorage.setItem('adminUser', JSON.stringify({
@@ -65,50 +61,54 @@ const AdminLogin = () => {
 
   return (
     <div className={`admin-login-container admin-login ${exitAnimation ? 'exit-animation' : ''}`}>
-      {/* Company Logo */}
-      <div className="company-logo">
-        <img src="/public/assets/images/Company_Logo.png" alt="Company Logo" />
+
+      {/* Full-page background — image + gradient that fades right */}
+      <div className="admin-bg-fullpage" aria-hidden="true">
+        <img src="/assets/images/admin-bg-1.jpg" alt="" />
+        <div className="admin-bg-gradient" />
       </div>
 
-      {/* Background Image with Car - Full Screen */}
-      <div className="admin-image-section">
-        <div className="background-image-wrapper">
-          <img src="/assets/images/background_2.png" alt="Background" />
-        </div>
-        <div className="car-wrapper">
-          <div className="car-circle-wrapper-admin">
-            <img className="admin-car" src="/assets/images/car.png" alt="Fleet Vehicle" />
+      {/* Floating particles */}
+      <div className="al-particles" aria-hidden="true">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <span key={i} className={`al-particle al-particle-${i + 1}`} />
+        ))}
+      </div>
+
+      {/* Left branding column */}
+      <div className="admin-content-left">
+        <div className="admin-panel-center">
+          <div className="admin-collab-bar">
+            <div className="admin-collab-logo-wrap">
+              <img src="/assets/images/DAR-FLEET.png" alt="DAR Fleet" className="admin-collab-logo" />
+            </div>
+            <span className="admin-collab-x">×</span>
+            <div className="admin-collab-logo-wrap">
+              <img src="/assets/images/PQ-LOGO.png" alt="PQ" className="admin-collab-logo" />
+            </div>
           </div>
+          <h2 className="admin-panel-title">Fleet Dispatch<br />Management</h2>
+          <p className="admin-panel-subtitle">Monitor · Dispatch · Control</p>
         </div>
       </div>
 
-      {/* Floating Form Box */}
+      {/* Right form column */}
       <div className="admin-form-container">
         <div className="admin-login-card">
+
           {/* Header */}
-          <div className={`admin-header ${!headerVisible ? 'hidden' : ''}`}>
-            <div className="admin-logo-icon">
-              <svg viewBox="0 0 100 100" className="admin-logo-svg">
-                <rect x="20" y="20" width="60" height="60" rx="5" fill="none" stroke="white" strokeWidth="3"/>
-                <circle cx="50" cy="50" r="8" fill="white"/>
-                <line x1="50" y1="30" x2="50" y2="20" stroke="white" strokeWidth="2"/>
-                <line x1="70" y1="50" x2="80" y2="50" stroke="white" strokeWidth="2"/>
-              </svg>
-            </div>
+          <div className="admin-header">
             <h1 className="admin-logo-text">ADMIN PANEL</h1>
             <p className="admin-header-subtitle">
               {username || password ? 'Verify your credentials' : 'Fleet Dispatch Management'}
             </p>
           </div>
 
-          {/* Error Message */}
           {error && <div className="error-message">{error}</div>}
 
-          {/* Form Box */}
           <div className="admin-form-box">
             <form onSubmit={handleAdminLogin} className="admin-login-form">
 
-              {/* Email input — label says "Admin Username" to keep look identical */}
               <div className="admin-form-group">
                 <label htmlFor="admin-username" className="admin-form-label">Admin Username</label>
                 <div className="admin-input-wrapper">
@@ -124,7 +124,6 @@ const AdminLogin = () => {
                 </div>
               </div>
 
-              {/* Password */}
               <div className="admin-form-group">
                 <label htmlFor="admin-password" className="admin-form-label">Password</label>
                 <div className="admin-password-input-wrapper admin-input-wrapper">
