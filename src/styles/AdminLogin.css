@@ -58,6 +58,56 @@
 }
 
 /* ════════════════════════════════════════════════════════════
+   CAR FLYBY TRANSITION
+════════════════════════════════════════════════════════════ */
+.al-car-transition {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.al-car-runner {
+  position: absolute;
+  top: 50%;
+  left: -70vw;
+  width: 60vw;
+  opacity: 0;
+  transform: translateY(-50%);
+}
+
+.al-car-transition.active .al-car-runner {
+  animation: alCarDrive 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.al-car-runner img {
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 24px 48px rgba(0,0,0,0.5));
+}
+
+@keyframes alCarDrive {
+  0%   { left: -70vw; opacity: 0;   transform: translateY(-50%); }
+  15%  {              opacity: 1;                                 }
+  100% { left: 110%;  opacity: 1;   transform: translateY(-50%); }
+}
+
+.al-car-transition.reverse .al-car-runner img {
+  transform: scaleX(-1);
+}
+
+.al-car-transition.reverse.active .al-car-runner {
+  animation: alCarDriveReverse 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes alCarDriveReverse {
+  0%   { left: 110%;  opacity: 0;   transform: translateY(-50%); }
+  15%  {              opacity: 1;                                 }
+  100% { left: -70vw; opacity: 1;   transform: translateY(-50%); }
+}
+
+/* ════════════════════════════════════════════════════════════
    FULL-PAGE BACKGROUND
    Image covers the entire page; gradient fades it to dark on
    the right so the form card reads cleanly without a hard seam.

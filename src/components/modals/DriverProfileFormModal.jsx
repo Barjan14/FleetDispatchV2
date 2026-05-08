@@ -14,31 +14,24 @@ const DriverProfileFormModal = ({ driver, fleets, vehicles, onSave, onClose }) =
     availability: 'Available',
     assigned_fleet_id: '',
     assigned_vehicle_id: '',
-    notes: ''
+    notes: '',
   });
 
   useEffect(() => {
     if (driver) {
       setFormData({
         ...driver,
-        assigned_fleet_id: driver.assigned_fleet_id || '',
-        assigned_vehicle_id: driver.assigned_vehicle_id || ''
+        assigned_fleet_id:  driver.assigned_fleet_id  || '',
+        assigned_vehicle_id: driver.assigned_vehicle_id || '',
       });
     }
   }, [driver]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    let finalValue = type === 'checkbox' ? checked : value;
-
-    if ((name === 'assigned_fleet_id' || name === 'assigned_vehicle_id') && value === '') {
-      finalValue = null;
-    }
-
-    setFormData(prev => ({
-      ...prev,
-      [name]: finalValue
-    }));
+    let val = type === 'checkbox' ? checked : value;
+    if ((name === 'assigned_fleet_id' || name === 'assigned_vehicle_id') && value === '') val = null;
+    setFormData(prev => ({ ...prev, [name]: val }));
   };
 
   const handleSubmit = (e) => {
@@ -46,150 +39,77 @@ const DriverProfileFormModal = ({ driver, fleets, vehicles, onSave, onClose }) =
     onSave(formData);
   };
 
+  const Field = ({ label, children, full }) => (
+    <div className="admin-form-group" style={{ margin: 0, gridColumn: full ? '1 / -1' : undefined }}>
+      <label>{label}</label>
+      {children}
+    </div>
+  );
+
+  const Divider = ({ title }) => (
+    <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: '10px', margin: '4px 0 0' }}>
+      <span style={{ fontSize: '10px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>{title}</span>
+      <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
+    </div>
+  );
+
   return (
-    <div 
-        className="modal-overlay" 
-        onClick={onClose} // ✅ Closes when clicking the background
-      >
-        <div 
-          className="modal-content modal-large" 
-          onClick={(e) => e.stopPropagation()} // ✅ Prevents closing when clicking inside the form
-        >
-          <div className="modal-header">
-            <h2>{driver ? 'Edit Driver Profile' : 'New Driver Profile'}</h2>
-            <button type="button" className="close-btn" onClick={onClose}>&times;</button>
-          </div>
+    <div className="admin-overlay" onClick={onClose}>
+      <div className="admin-modal" style={{ maxWidth: '680px', width: '94%' }} onClick={e => e.stopPropagation()}>
 
+        {/* Header */}
+        <div className="admin-modal-header" style={{ padding: '18px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>
+            {driver ? 'Edit Driver Profile' : 'New Driver Profile'}
+          </h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', lineHeight: 0, padding: '4px' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Body */}
         <form onSubmit={handleSubmit}>
-          {/* PERSONAL INFORMATION */}
-          <div className="form-section">
-            <h3>Personal Information</h3>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Full Name *</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="e.g. Juan Dela Cruz"
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Date of Birth</label>
-                <input
-                  type="date"
-                  name="date_of_birth"
-                  value={formData.date_of_birth || ''}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-            
-            <div className="form-row">
-              <div className="form-group">
-                <label>Contact Number</label>
-                <input
-                  type="tel"
-                  name="contact_number"
-                  value={formData.contact_number || ''}
-                  onChange={handleChange}
-                  placeholder="09XX-XXX-XXXX"
-                />
-              </div>
-              <div className="form-group">
-                <label>Emergency Contact</label>
-                <input
-                  type="tel"
-                  name="emergency_contact"
-                  value={formData.emergency_contact || ''}
-                  onChange={handleChange}
-                  placeholder="Contact person & number"
-                />
-              </div>
-            </div>
+          <div className="admin-modal-body" style={{ padding: '22px 24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
 
-            <div className="form-group">
-              <label>Address</label>
-              <input
-                type="text"
-                name="address"
-                value={formData.address || ''}
-                onChange={handleChange}
-                placeholder="Full residential address"
-              />
-            </div>
-          </div>
+              <Divider title="Personal Information" />
 
-          {/* LICENSE INFORMATION */}
-          <div className="form-section">
-            <h3>License Information</h3>
-            <div className="form-row">
-              <div className="form-group">
-                <label>License Number *</label>
-                <input
-                  type="text"
-                  name="license_number"
-                  value={formData.license_number}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>License Type *</label>
+              <Field label="Full Name *">
+                <input name="name" value={formData.name} onChange={handleChange} placeholder="e.g. Juan Dela Cruz" required />
+              </Field>
+              <Field label="Date of Birth">
+                <input type="date" name="date_of_birth" value={formData.date_of_birth || ''} onChange={handleChange} />
+              </Field>
+              <Field label="Contact Number">
+                <input type="tel" name="contact_number" value={formData.contact_number || ''} onChange={handleChange} placeholder="09XX-XXX-XXXX" />
+              </Field>
+              <Field label="Emergency Contact">
+                <input type="tel" name="emergency_contact" value={formData.emergency_contact || ''} onChange={handleChange} placeholder="Contact person & number" />
+              </Field>
+              <Field label="Address" full>
+                <input name="address" value={formData.address || ''} onChange={handleChange} placeholder="Full residential address" />
+              </Field>
+
+              <Divider title="License Information" />
+
+              <Field label="License Number *">
+                <input name="license_number" value={formData.license_number} onChange={handleChange} required />
+              </Field>
+              <Field label="License Type *">
                 <select name="license_type" value={formData.license_type} onChange={handleChange}>
-                  <option value="A">A (Motorcycle)</option>
-                  <option value="B">B (Car)</option>
-                  <option value="C">C (Truck)</option>
-                  <option value="BE">BE (Car + Trailer)</option>
-                  <option value="CE">CE (Truck + Trailer)</option>
+                  <option value="A">A — Motorcycle</option>
+                  <option value="B">B — Car</option>
+                  <option value="C">C — Truck</option>
+                  <option value="BE">BE — Car + Trailer</option>
+                  <option value="CE">CE — Truck + Trailer</option>
                 </select>
-              </div>
-              <div className="form-group">
-                <label>License Expiry</label>
-                <input
-                  type="date"
-                  name="license_expiry"
-                  value={formData.license_expiry || ''}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* ASSIGNMENT & STATUS */}
-          <div className="form-section">
-            <h3>Assignment & Status</h3>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Assigned Fleet</label>
-                <select 
-                  name="assigned_fleet_id" 
-                  value={formData.assigned_fleet_id || ''} 
-                  onChange={handleChange}
-                >
-                  <option value="">No Fleet Assignment</option>
-                  {fleets.map(f => (
-                    <option key={f.id} value={f.id}>{f.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Assigned Vehicle</label>
-                <select 
-                  name="assigned_vehicle_id" 
-                  value={formData.assigned_vehicle_id || ''} 
-                  onChange={handleChange}
-                >
-                  <option value="">No Vehicle Assignment</option>
-                  {vehicles.map(v => (
-                    <option key={v.id} value={v.id}>{v.name} ({v.plate_number})</option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Availability Status</label>
+              </Field>
+              <Field label="License Expiry">
+                <input type="date" name="license_expiry" value={formData.license_expiry || ''} onChange={handleChange} />
+              </Field>
+              <Field label="Availability Status">
                 <select name="availability" value={formData.availability} onChange={handleChange}>
                   <option value="Available">Available</option>
                   <option value="On Trip">On Trip</option>
@@ -197,43 +117,26 @@ const DriverProfileFormModal = ({ driver, fleets, vehicles, onSave, onClose }) =
                   <option value="Off Duty">Off Duty</option>
                   <option value="Suspended">Suspended</option>
                 </select>
-              </div>
-            </div>
-            
-              {/* THE TOGGLE BUTTON */}
-                  <div className="form-group">
-                    <label>Employment Status</label>
-                    <div className="status-toggle-container">
-                      <button
-                        type="button"
-                        className={`toggle-status-btn ${formData.is_active_driver ? 'is-active' : 'is-inactive'}`}
-                        onClick={() => setFormData(prev => ({ ...prev, is_active_driver: !prev.is_active_driver }))}
-                      >
-                        <span className="status-dot"></span>
-                        {formData.is_active_driver ? 'Active Driver' : 'Inactive Driver'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
+              </Field>
 
-          <div className="form-group">
-            <label>Notes</label>
-            <textarea
-              name="notes"
-              value={formData.notes || ''}
-              onChange={handleChange}
-              placeholder="Additional notes..."
-              rows={2}
-            />
+              <Divider title="Notes" />
+
+              <Field label="Additional Notes" full>
+                <textarea name="notes" value={formData.notes || ''} onChange={handleChange} placeholder="Any relevant notes about this driver..." rows={3} style={{ resize: 'vertical' }} />
+              </Field>
+
+            </div>
           </div>
 
-          <div className="form-actions">
-            <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn-save">
-              {driver ? 'Update Driver Profile' : 'Save New Driver'}
+          {/* Footer */}
+          <div className="admin-modal-footer" style={{ padding: '14px 24px', background: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
+            <button type="button" className="admin-btn admin-btn-outline" onClick={onClose}>Cancel</button>
+            <button type="submit" className="admin-btn admin-btn-primary">
+              {driver ? 'Save Changes' : 'Add Driver'}
             </button>
           </div>
         </form>
+
       </div>
     </div>
   );

@@ -91,13 +91,13 @@ const UserDashboard = () => {
           className={`nav-tab ${activeTab === 'request' ? 'active' : ''}`}
           onClick={() => setActiveTab('request')}
         >
-          📋 New Request
+          New Request
         </button>
         <button
           className={`nav-tab ${activeTab === 'history' ? 'active' : ''}`}
           onClick={() => setActiveTab('history')}
         >
-          📜 My Requests
+          My Requests
         </button>
       </nav>
 
@@ -112,7 +112,7 @@ const UserDashboard = () => {
 
             {submitSuccess && (
               <div className="success-message">
-                ✅ Request submitted successfully! Your booking is pending admin approval.
+                Request submitted successfully! Your booking is pending admin approval.
               </div>
             )}
 
@@ -204,7 +204,7 @@ const UserDashboard = () => {
 
               {/* Submit Button */}
               <button type="submit" className="submit-btn">
-                📤 Submit Request
+                Submit Request
               </button>
             </form>
           </section>
@@ -219,7 +219,7 @@ const UserDashboard = () => {
 
             {submissions.length === 0 ? (
               <div className="empty-state">
-                <p>📭 No requests yet</p>
+                <p>No requests yet</p>
                 <p className="empty-state-subtitle">Submit your first vehicle booking request above.</p>
               </div>
             ) : (

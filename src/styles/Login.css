@@ -70,37 +70,41 @@
 
 .page-transition .car-runner {
   position: absolute;
-  top: 55%;
-  left: -180px;
-  width: 180px;
+  top: 50%;
+  left: -70vw;
+  width: 60vw;
   opacity: 0;
-  transform: translateY(-50%) scale(0.9);
+  transform: translateY(-50%);
 }
 
 .page-transition.active .car-runner {
-  animation: carDrive 0.9s ease-in-out forwards;
+  animation: carDrive 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .page-transition .car-runner img {
   width: 100%;
   height: auto;
-  filter: drop-shadow(0 12px 28px rgba(0,0,0,0.25));
+  filter: drop-shadow(0 24px 48px rgba(0,0,0,0.5));
 }
 
 @keyframes carDrive {
-  0% {
-    left: -220px;
-    opacity: 0;
-    transform: translateY(-50%) scale(0.95);
-  }
-  20% {
-    opacity: 1;
-  }
-  100% {
-    left: 120%;
-    opacity: 1;
-    transform: translateY(-50%) scale(1);
-  }
+  0%   { left: -70vw; opacity: 0;   transform: translateY(-50%); }
+  15%  {              opacity: 1;                                 }
+  100% { left: 110%;  opacity: 1;   transform: translateY(-50%); }
+}
+
+.page-transition.reverse .car-runner img {
+  transform: scaleX(-1);
+}
+
+.page-transition.reverse.active .car-runner {
+  animation: carDriveReverse 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes carDriveReverse {
+  0%   { left: 110%;  opacity: 0;   transform: translateY(-50%); }
+  15%  {              opacity: 1;                                 }
+  100% { left: -70vw; opacity: 1;   transform: translateY(-50%); }
 }
 
 /* ════════════════════════════════════════════════════════════

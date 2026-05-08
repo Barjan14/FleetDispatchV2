@@ -2,6 +2,54 @@
    FLEET DISPATCH FORM - MODERN DESIGN
    ========================================================= */
 
+/* ── Car flyby transition ──────────────────────────────── */
+.fd-car-transition {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.fd-car-runner {
+  position: absolute;
+  top: 50%;
+  left: -70vw;
+  width: 60vw;
+  opacity: 0;
+  transform: translateY(-50%);
+}
+
+.fd-car-transition.active .fd-car-runner {
+  animation: fdCarDrive 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.fd-car-runner img {
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 24px 48px rgba(0,0,0,0.5));
+}
+
+@keyframes fdCarDrive {
+  0%   { left: -70vw; opacity: 0;   transform: translateY(-50%); }
+  15%  {              opacity: 1;                                 }
+  100% { left: 110%;  opacity: 1;   transform: translateY(-50%); }
+}
+
+.fd-car-transition.reverse .fd-car-runner img {
+  transform: scaleX(-1);
+}
+
+.fd-car-transition.reverse.active .fd-car-runner {
+  animation: fdCarDriveReverse 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes fdCarDriveReverse {
+  0%   { left: 110%;  opacity: 0;   transform: translateY(-50%); }
+  15%  {              opacity: 1;                                 }
+  100% { left: -70vw; opacity: 1;   transform: translateY(-50%); }
+}
+
 /* Color Palette from https://coolors.co/ffffff-fdd117-010100-006205-006c35 */
 /* Typography tokens aligned with Login.css */
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');

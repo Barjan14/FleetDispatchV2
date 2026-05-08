@@ -88,13 +88,6 @@ export default function VehicleDetailsModal({ vehicle, onEdit, onDelete, onClose
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', fontWeight: '700' }}>Odometer</span>
-                <span style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>
-                  {vehicle.odometer_km ? `${Number(vehicle.odometer_km).toLocaleString()} km` : '—'}
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', fontWeight: '700' }}>Model</span>
                 <span style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>{vehicle.model || '—'}</span>
               </div>
