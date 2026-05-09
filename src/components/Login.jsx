@@ -146,13 +146,10 @@ const Login = () => {
 
       </div>
 
-      {/* ── Lightning McQueen flyby — outside login-container so the
-           page-exit fade never kills this animation ──────────── */}
+      {/* Car flyby — outside login-container so exit fade never kills it */}
       <div className={`page-transition ${isTransitioning ? 'active' : ''}`} aria-hidden="true">
         <div className="car-runner">
-          <span className="kachow-text">KACHOW!</span>
-          <img src="/assets/images/Lightning_McQueen.png" alt="Lightning McQueen" />
-          <div className="dust-trail" />
+          <img src="/assets/images/car.png" alt="car" />
         </div>
       </div>
     </>

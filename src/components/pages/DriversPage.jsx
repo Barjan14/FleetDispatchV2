@@ -143,7 +143,11 @@ export default function DriversPage({
                 </td>
                 <td className="admin-muted-sm">{assignedVehicle?.name || '—'}</td>
                 <td className="admin-muted-sm">{assignedFleet?.name || '—'}</td>
-                <td>{driver.is_active_driver ? '✓' : '✗'}</td>
+                <td>
+                  <span className={`admin-badge ${driver.is_active_driver ? 'b-approved' : 'b-rejected'}`}>
+                    {driver.is_active_driver ? 'Active' : 'Inactive'}
+                  </span>
+                </td>
                 {/* REMOVED: <td className="admin-actions">...</td> */}
               </tr>
                 );

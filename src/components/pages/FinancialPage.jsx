@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../../supabaseClient';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
@@ -81,7 +81,7 @@ const css = `
 
   .fin-root {
     display:flex; flex-direction:column; gap:18px;
-    padding:0 20px 16px; height:100%; max-height:calc(100vh - 90px);
+    padding:20px 20px 16px; height:100%; max-height:calc(100vh - 90px);
     box-sizing:border-box; overflow:hidden;
     animation:finFadeUp .3s ease both;
   }
@@ -420,7 +420,7 @@ function FuelTab({ vehicles, refreshKey }) {
       <div className="fin-card">
         <div className="fin-card-header">
           <div className="fin-card-title">
-            <h3>⛽ Fuel Records</h3>
+            <h3>Fuel Records</h3>
             <span className="fin-card-count">{records.length}</span>
           </div>
           <div className="fin-card-actions">
@@ -586,7 +586,7 @@ function MaintenanceTab({ vehicles, refreshKey }) {
       <div className="fin-card">
         <div className="fin-card-header">
           <div className="fin-card-title">
-            <h3>🔧 Maintenance Costs</h3>
+            <h3>Maintenance Costs</h3>
             <span className="fin-card-count">{records.length}</span>
           </div>
           <div className="fin-card-actions">
@@ -755,7 +755,7 @@ function RepairsTab({ vehicles, refreshKey }) {
       <div className="fin-card">
         <div className="fin-card-header">
           <div className="fin-card-title">
-            <h3>🛠️ Repair Records</h3>
+            <h3>Repair Records</h3>
             <span className="fin-card-count">{records.length}</span>
           </div>
           <div className="fin-card-actions">
@@ -788,8 +788,8 @@ function RepairsTab({ vehicles, refreshKey }) {
                   <td style={{ fontWeight: 700, color: C.danger }}>{fmt(r.repair_cost)}</td>
                   <td><span className={`fin-badge ${STATUS_BADGE[r.status] || ''}`}>{r.status}</span></td>
                   <td style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                    {r.status === 'Pending'     && <button className="fin-btn fin-btn-sm fin-btn-outline-blue"  onClick={() => updateStatus(r.id, 'In Progress')}>→ In Progress</button>}
-                    {r.status === 'In Progress' && <button className="fin-btn fin-btn-sm fin-btn-outline-green" onClick={() => updateStatus(r.id, 'Completed')}>✓ Done</button>}
+                    {r.status === 'Pending'     && <button className="fin-btn fin-btn-sm fin-btn-outline-blue"  onClick={() => updateStatus(r.id, 'In Progress')}>In Progress</button>}
+                    {r.status === 'In Progress' && <button className="fin-btn fin-btn-sm fin-btn-outline-green" onClick={() => updateStatus(r.id, 'Completed')}>Done</button>}
                     <button className="fin-btn fin-btn-icon" onClick={() => del(r.id)} title="Delete record"><Icons.Trash /></button>
                   </td>
                 </tr>
@@ -947,7 +947,7 @@ function DepreciationTab({ vehicles, refreshKey }) {
       <div className="fin-card">
         <div className="fin-card-header">
           <div className="fin-card-title">
-            <h3>📉 Vehicle Depreciation</h3>
+            <h3>Vehicle Depreciation</h3>
             <span className="fin-card-count">{records.length}</span>
           </div>
           <div className="fin-card-actions">
@@ -1047,6 +1047,166 @@ function DepreciationTab({ vehicles, refreshKey }) {
   );
 }
 
+// ── Monthly Summary tab ───────────────────────────────────
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function MonthlyBreakdownTab({ refreshKey }) {
+  const [fuelRecs,   setFuelRecs]   = useState([]);
+  const [maintRecs,  setMaintRecs]  = useState([]);
+  const [repairRecs, setRepairRecs] = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [selYear,    setSelYear]    = useState('all');
+
+  const load = useCallback(async () => {
+    const [{ data: f }, { data: m }, { data: r }] = await Promise.all([
+      supabase.from('fuel_records').select('date, total_cost'),
+      supabase.from('maintenance_costs').select('date, amount'),
+      supabase.from('repair_records').select('date_reported, repair_cost'),
+    ]);
+    setFuelRecs(f || []);
+    setMaintRecs(m || []);
+    setRepairRecs(r || []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load, refreshKey]);
+
+  const monthly = useMemo(() => {
+    const map = {};
+    const add = (dateStr, key, amount) => {
+      if (!dateStr) return;
+      const d = new Date(dateStr);
+      if (isNaN(d)) return;
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (!map[ym]) map[ym] = { year: d.getFullYear(), month: d.getMonth(), fuel: 0, maint: 0, repair: 0 };
+      map[ym][key] += Number(amount || 0);
+    };
+    fuelRecs.forEach(r  => add(r.date,          'fuel',   r.total_cost));
+    maintRecs.forEach(r => add(r.date,          'maint',  r.amount));
+    repairRecs.forEach(r=> add(r.date_reported, 'repair', r.repair_cost));
+    return Object.entries(map)
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([ym, d]) => ({ ym, ...d, total: d.fuel + d.maint + d.repair }));
+  }, [fuelRecs, maintRecs, repairRecs]);
+
+  const years = useMemo(() =>
+    Array.from(new Set(monthly.map(d => d.year))).sort((a, b) => b - a),
+    [monthly]
+  );
+
+  const filtered = selYear === 'all' ? monthly : monthly.filter(d => d.year === parseInt(selYear));
+
+  const byYear = useMemo(() => {
+    const map = {};
+    filtered.forEach(d => { if (!map[d.year]) map[d.year] = []; map[d.year].push(d); });
+    return Object.entries(map).sort((a, b) => b[0] - a[0]);
+  }, [filtered]);
+
+  const yearTotals = useMemo(() => {
+    const map = {};
+    filtered.forEach(d => {
+      if (!map[d.year]) map[d.year] = { fuel: 0, maint: 0, repair: 0, total: 0 };
+      map[d.year].fuel   += d.fuel;
+      map[d.year].maint  += d.maint;
+      map[d.year].repair += d.repair;
+      map[d.year].total  += d.total;
+    });
+    return map;
+  }, [filtered]);
+
+  const grandFuel   = filtered.reduce((s, d) => s + d.fuel,   0);
+  const grandMaint  = filtered.reduce((s, d) => s + d.maint,  0);
+  const grandRepair = filtered.reduce((s, d) => s + d.repair, 0);
+  const grandTotal  = grandFuel + grandMaint + grandRepair;
+
+  return (
+    <div className="fin-card">
+      <div className="fin-card-header">
+        <div className="fin-card-title">
+          <h3>Monthly Summary</h3>
+          <span className="fin-card-count">{filtered.length} month{filtered.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div className="fin-card-actions">
+          <select
+            value={selYear}
+            onChange={e => setSelYear(e.target.value)}
+            style={{ padding: '6px 10px', border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 12, outline: 'none', color: C.text, background: C.card, cursor: 'pointer' }}
+          >
+            <option value="all">All Years</option>
+            {years.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div className="fin-table-container">
+        {loading && <div className="fin-empty">Loading…</div>}
+        {!loading && filtered.length === 0 && <div className="fin-empty">No records found for this period.</div>}
+        {!loading && filtered.length > 0 && (
+          <table className="fin-table">
+            <thead>
+              <tr>
+                <th>Period</th>
+                <th style={{ color: '#92400e' }}>Fuel</th>
+                <th style={{ color: '#1e40af' }}>Maintenance</th>
+                <th style={{ color: '#991b1b' }}>Repairs</th>
+                <th>Monthly Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {byYear.map(([year, months]) => (
+                <React.Fragment key={year}>
+                  {/* Year header */}
+                  <tr style={{ background: '#f1f5f9' }}>
+                    <td colSpan={5} style={{ fontWeight: 800, fontSize: 11, color: C.muted, padding: '7px 18px', letterSpacing: '0.08em', textTransform: 'uppercase', borderLeft: `3px solid ${C.primary}` }}>
+                      {year}
+                    </td>
+                  </tr>
+
+                  {/* Month rows */}
+                  {months.map(d => (
+                    <tr key={d.ym}>
+                      <td style={{ paddingLeft: 28, fontWeight: 600, color: C.text }}>
+                        {MONTH_NAMES[d.month]}
+                        <span style={{ fontSize: 11, color: C.textSub, marginLeft: 6 }}>{d.year}</span>
+                      </td>
+                      <td style={{ fontWeight: d.fuel   > 0 ? 700 : 400, color: d.fuel   > 0 ? C.amber  : C.textSub }}>{d.fuel   > 0 ? fmt(d.fuel)   : '—'}</td>
+                      <td style={{ fontWeight: d.maint  > 0 ? 700 : 400, color: d.maint  > 0 ? C.blue   : C.textSub }}>{d.maint  > 0 ? fmt(d.maint)  : '—'}</td>
+                      <td style={{ fontWeight: d.repair > 0 ? 700 : 400, color: d.repair > 0 ? C.danger : C.textSub }}>{d.repair > 0 ? fmt(d.repair) : '—'}</td>
+                      <td style={{ fontWeight: 800, color: C.text }}>{fmt(d.total)}</td>
+                    </tr>
+                  ))}
+
+                  {/* Year subtotal */}
+                  <tr style={{ background: '#fafbff', borderTop: `2px solid ${C.border}` }}>
+                    <td style={{ paddingLeft: 18, fontWeight: 700, fontSize: 11, color: C.primary, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      {year} Subtotal
+                    </td>
+                    <td style={{ fontWeight: 700, color: C.amber  }}>{fmt(yearTotals[year]?.fuel   || 0)}</td>
+                    <td style={{ fontWeight: 700, color: C.blue   }}>{fmt(yearTotals[year]?.maint  || 0)}</td>
+                    <td style={{ fontWeight: 700, color: C.danger }}>{fmt(yearTotals[year]?.repair || 0)}</td>
+                    <td style={{ fontWeight: 900, fontSize: 14, color: C.primary }}>{fmt(yearTotals[year]?.total || 0)}</td>
+                  </tr>
+                </React.Fragment>
+              ))}
+
+              {/* Grand total row */}
+              {selYear === 'all' && byYear.length > 1 && (
+                <tr style={{ background: '#1e293b' }}>
+                  <td style={{ fontWeight: 800, color: '#fff', fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Grand Total</td>
+                  <td style={{ fontWeight: 700, color: '#fcd34d' }}>{fmt(grandFuel)}</td>
+                  <td style={{ fontWeight: 700, color: '#93c5fd' }}>{fmt(grandMaint)}</td>
+                  <td style={{ fontWeight: 700, color: '#fca5a5' }}>{fmt(grandRepair)}</td>
+                  <td style={{ fontWeight: 900, color: '#ffffff', fontSize: 15 }}>{fmt(grandTotal)}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main FinancialPage ────────────────────────────────────
 export default function FinancialPage() {
   const [activeTab, setActiveTab]   = useState('fuel');
@@ -1089,10 +1249,11 @@ export default function FinancialPage() {
   };
 
   const TABS = [
-    { key: 'fuel',         label: '⛽ Fuel Records'      },
-    { key: 'maintenance',  label: '🔧 Maintenance Costs' },
-    { key: 'repairs',      label: '🛠️ Repair Records'    },
-    { key: 'depreciation', label: '📉 Depreciation'      },
+    { key: 'fuel',         label: 'Fuel Records'      },
+    { key: 'maintenance',  label: 'Maintenance Costs' },
+    { key: 'repairs',      label: 'Repair Records'    },
+    { key: 'depreciation', label: 'Depreciation'      },
+    { key: 'monthly',      label: 'Monthly Summary'   },
   ];
 
   return (
@@ -1117,10 +1278,11 @@ export default function FinancialPage() {
         </button>
       </div>
 
-      {activeTab === 'fuel'         && <FuelTab         vehicles={vehicles} refreshKey={refreshKey} />}
-      {activeTab === 'maintenance'  && <MaintenanceTab  vehicles={vehicles} refreshKey={refreshKey} />}
-      {activeTab === 'repairs'      && <RepairsTab      vehicles={vehicles} refreshKey={refreshKey} />}
-      {activeTab === 'depreciation' && <DepreciationTab vehicles={vehicles} refreshKey={refreshKey} />}
+      {activeTab === 'fuel'         && <FuelTab              vehicles={vehicles} refreshKey={refreshKey} />}
+      {activeTab === 'maintenance'  && <MaintenanceTab       vehicles={vehicles} refreshKey={refreshKey} />}
+      {activeTab === 'repairs'      && <RepairsTab           vehicles={vehicles} refreshKey={refreshKey} />}
+      {activeTab === 'depreciation' && <DepreciationTab      vehicles={vehicles} refreshKey={refreshKey} />}
+      {activeTab === 'monthly'      && <MonthlyBreakdownTab                      refreshKey={refreshKey} />}
     </div>
   );
 }

@@ -8,11 +8,16 @@ const AdminLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [exitAnimation, setExitAnimation] = useState(false);
+  const [exitAnimation, setExitAnimation]     = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [transitionDir, setTransitionDir]     = useState('forward');
 
-  const navigateTo = (url) => {
+  const navigateTo = (url, dir = 'forward') => {
+    if (isTransitioning) return;
+    setTransitionDir(dir);
+    setIsTransitioning(true);
     setExitAnimation(true);
-    setTimeout(() => { window.location.href = url; }, 800);
+    setTimeout(() => { window.location.href = url; }, 900);
   };
 
   const handleAdminLogin = async (e) => {
@@ -60,6 +65,7 @@ const AdminLogin = () => {
   };
 
   return (
+    <>
     <div className={`admin-login-container admin-login ${exitAnimation ? 'exit-animation' : ''}`}>
 
       {/* Full-page background — image + gradient that fades right */}
@@ -160,7 +166,7 @@ const AdminLogin = () => {
                 {isLoading ? 'Authenticating...' : 'ACCESS ADMIN PANEL'}
               </button>
 
-              <button type="button" className="admin-btn admin-btn-back" onClick={() => navigateTo('/request-form')}>
+              <button type="button" className="admin-btn admin-btn-back" onClick={() => navigateTo('/request-form', 'back')}>
                 REQUEST FORM
               </button>
 
@@ -169,6 +175,14 @@ const AdminLogin = () => {
         </div>
       </div>
     </div>
+
+      {/* Car flyby — outside container so exit fade never kills it */}
+      <div className={`al-car-transition ${isTransitioning ? 'active' : ''} ${transitionDir === 'back' ? 'reverse' : ''}`} aria-hidden="true">
+        <div className="al-car-runner">
+          <img src="/assets/images/car.png" alt="car" />
+        </div>
+      </div>
+    </>
   );
 };
 
