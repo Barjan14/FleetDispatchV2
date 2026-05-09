@@ -1,6 +1,8 @@
 import React, { useState, useRef, useCallback } from 'react';
 import '../styles/Login.css';
+import '../styles/AboutModal.css';
 import bgVideo from '../assets/videos/bg_video.mp4';
+import AboutModal from './AboutModal';
 
 const Login = () => {
   const [exitAnimation, setExitAnimation]     = useState(false);
@@ -8,6 +10,7 @@ const Login = () => {
   const [tilt, setTilt]                       = useState({ x: 0, y: 0 });
   const [ripples, setRipples]                 = useState([]);
   const [btnPressed, setBtnPressed]           = useState(null);
+  const [showAbout, setShowAbout]             = useState(false);
 
   const cardRef  = useRef(null);
   const rippleId = useRef(0);
@@ -152,6 +155,19 @@ const Login = () => {
           <img src="/assets/images/car.png" alt="car" />
         </div>
       </div>
+
+      {/* ── Floating ? button ── */}
+      <button
+        className="am-help-btn"
+        onClick={() => setShowAbout(true)}
+        aria-label="About Fleet Dispatch"
+        title="About & Help"
+      >
+        ?
+      </button>
+
+      {/* ── About modal ── */}
+      {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
     </>
   );
 };

@@ -2,6 +2,10 @@
    FLEET DISPATCH FORM - MODERN DESIGN
    ========================================================= */
 
+/* Color Palette from https://coolors.co/ffffff-fdd117-010100-006205-006c35 */
+/* Typography tokens aligned with Login.css */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
+
 /* ── Car flyby transition ──────────────────────────────── */
 .fd-car-transition {
   position: fixed;
@@ -49,10 +53,6 @@
   15%  {              opacity: 1;                                 }
   100% { left: -70vw; opacity: 1;   transform: translateY(-50%); }
 }
-
-/* Color Palette from https://coolors.co/ffffff-fdd117-010100-006205-006c35 */
-/* Typography tokens aligned with Login.css */
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
 
 :root {
   /* Primary Colors - Greens from palette */
