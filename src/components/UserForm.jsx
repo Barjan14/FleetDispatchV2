@@ -1,12 +1,3 @@
-// ─────────────────────────────────────────────────────────────
-// FULL REPLACEMENT for UserForm.jsx
-// - No login required to fill and submit the form
-// - Signs in anonymously just before insert to satisfy
-//   the user_id NOT NULL constraint in vehicle_bookings
-// - All form fields (name, dept, priority, details) are
-//   stored in admin_notes so admin sees everything
-// ─────────────────────────────────────────────────────────────
-
 import { useState } from 'react'
 import '../styles/UserForm.css'
 import { supabase } from '../supabaseClient'
