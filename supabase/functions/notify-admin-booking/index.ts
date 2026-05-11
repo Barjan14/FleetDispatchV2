@@ -49,7 +49,7 @@ serve(async (req: Request) => {
               <p><b>Purpose:</b> ${purpose}</p>
             </div>
             <br/>
-            <a href="http://localhost:5173/admin-login" style="background: #1d4ed8; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">Go to Admin Dashboard</a>
+            <a href="https://darxfleetdispatch.vercel.app/admin-login" style="background: #1d4ed8; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">Go to Admin Dashboard</a>
           </div>`
       }),
     });
