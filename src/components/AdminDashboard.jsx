@@ -6,7 +6,6 @@ import { supabase } from '../supabaseClient';
 // Page Components
 import OverviewPage from './pages/OverviewPage';
 import VehiclesPage from './pages/VehiclesPage';
-import UsersPage from './pages/UsersPage';
 import BookingsPage from './pages/BookingsPage';
 import DriversPage from './pages/DriversPage';
 import FleetsPage from './pages/FleetsPage';
@@ -17,21 +16,72 @@ import FinancialPage from './pages/FinancialPage';
 // Modal Components
 import VehicleDetailsModal from './modals/VehicleDetailsModal';
 import VehicleFormModal from './modals/VehicleFormModal';
-import UserFormModal from './modals/UserFormModal';
 import BookingDetailsModal from './modals/BookingDetailsModal';
 
 // Utilities
 import { logVehicleChange, logVehicleUpdate, fetchVehicleChangeLogs } from '../utils/vehicleLogger';
 
+const NAV_ICONS = {
+  overview: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="18" y="3" width="4" height="18" rx="1"/>
+      <rect x="10" y="8" width="4" height="13" rx="1"/>
+      <rect x="2" y="13" width="4" height="8" rx="1"/>
+    </svg>
+  ),
+  vehicles: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1l2-4h10l2 4h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"/>
+      <circle cx="7.5" cy="17" r="2"/>
+      <circle cx="16.5" cy="17" r="2"/>
+    </svg>
+  ),
+  drivers: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="1" y="3" width="15" height="13" rx="2"/>
+      <path d="M16 8h4l3 3v3h-7V8z"/>
+      <circle cx="5.5" cy="18.5" r="2.5"/>
+      <circle cx="18.5" cy="18.5" r="2.5"/>
+    </svg>
+  ),
+  bookings: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="18" rx="2"/>
+      <path d="M16 2v4M8 2v4M3 10h18"/>
+    </svg>
+  ),
+  fleets: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+      <path d="M2 17l10 5 10-5"/>
+      <path d="M2 12l10 5 10-5"/>
+    </svg>
+  ),
+  logs: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="16" y1="13" x2="8" y2="13"/>
+      <line x1="16" y1="17" x2="8" y2="17"/>
+      <line x1="10" y1="9" x2="8" y2="9"/>
+    </svg>
+  ),
+  financial: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+      <polyline points="17 6 23 6 23 12"/>
+    </svg>
+  ),
+};
+
 const NAV = [
-  { key: 'overview',  icon: '📊', label: 'Overview'           },
-  { key: 'users',     icon: '👥', label: 'Users'              },
-  { key: 'vehicles',  icon: '🚗', label: 'Vehicles'           },
-  { key: 'drivers',   icon: '🚛', label: 'Drivers'            },
-  { key: 'bookings',  icon: '📅', label: 'Bookings'           },
-  { key: 'fleets',    icon: '🗂️', label: 'Fleets'             },
-  { key: 'logs',      icon: '📋', label: 'Logs'               },
-  { key: 'financial', icon: '💰', label: 'Financial Data'     },
+  { key: 'overview',  label: 'Overview'      },
+  { key: 'vehicles',  label: 'Vehicles'      },
+  { key: 'drivers',   label: 'Drivers'       },
+  { key: 'bookings',  label: 'Bookings'      },
+  { key: 'fleets',    label: 'Fleets'        },
+  { key: 'logs',      label: 'Logs'          },
+  { key: 'financial', label: 'Financial Data'},
 ];
 
 const normalizeVehicleLogs = (logs) =>
@@ -77,7 +127,6 @@ export default function AdminDashboard() {
   const [adminUser, setAdminUser]             = useState({});
   const [stats, setStats]                     = useState({});
   const [vehicles, setVehicles]               = useState([]);
-  const [users, setUsers]                     = useState([]);
   const [drivers, setDrivers]                 = useState([]);
   const [fleets, setFleets]                   = useState([]);
   const [bookings, setBookings]               = useState([]);
@@ -89,17 +138,12 @@ export default function AdminDashboard() {
 
   const [modalType, setModalType]             = useState('');
   const [selectedVehicle, setSelectedVehicle] = useState(null);
-  const [selectedUser, setSelectedUser]       = useState(null);
   const [selectedBooking, setSelectedBooking] = useState(null);
 
   const [vForm, setVForm] = useState({
     name: '', plate_number: '', model: '', year: '',
     fuel_type: 'Diesel', condition: 'Good', odometer_km: 0,
     is_available: true, fleet_id: '', image_url: '',
-  });
-  const [uForm, setUForm] = useState({
-    username: '', is_staff: false,
-    profile: { employee_id: '', department: '', phone: '' },
   });
 
   const initialLoadDone = useRef(false);
@@ -128,9 +172,8 @@ export default function AdminDashboard() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate('/admin-login'); return; }
 
-      const [vRes, uRes, fRes, bRes, dRes, cV, cU, cF, cB, cP, cO] = await Promise.all([
+      const [vRes, fRes, bRes, dRes, cV, cF, cB, cP, cO] = await Promise.all([
         supabase.from('vehicles').select('*').order('name'),
-        supabase.from('employee_profiles').select('*').order('created_at'),
         supabase.from('fleets').select('*, vehicles(id)'),
         supabase
           .from('vehicle_bookings')
@@ -144,7 +187,6 @@ export default function AdminDashboard() {
           .order('start_datetime', { ascending: false }),
         supabase.from('driver_profiles').select('*').order('name'),
         supabase.from('vehicles').select('*', { count: 'exact', head: true }),
-        supabase.from('employee_profiles').select('*', { count: 'exact', head: true }),
         supabase.from('fleets').select('*', { count: 'exact', head: true }),
         supabase.from('vehicle_bookings').select('*', { count: 'exact', head: true }),
         supabase.from('vehicle_bookings').select('*', { count: 'exact', head: true }).eq('status', 'Pending'),
@@ -155,24 +197,11 @@ export default function AdminDashboard() {
       setDrivers(dRes.data || []);
       setBookings(bRes.data || []);
 
-      setUsers((uRes.data || []).map(usr => ({
-        id:       usr.id,
-        user_id:  usr.user_id,
-        username: usr.employee_id || '—',
-        is_staff: usr.role === 'admin',
-        profile: {
-          employee_id: usr.employee_id || '',
-          department:  usr.department  || '',
-          phone:       usr.phone       || '',
-        },
-      })));
-
       setFleets((fRes.data || []).map(fl => ({ ...fl, vehicles: fl.vehicles || [] })));
       setOngoingBookings((bRes.data || []).filter(b => b.status === 'Ongoing' || b.status === 'Approved'));
 
       setStats({
         totalVehicles:   cV.count || 0,
-        totalUsers:      cU.count || 0,
         totalFleets:     cF.count || 0,
         totalBookings:   cB.count || 0,
         pendingBookings: cP.count || 0,
@@ -325,44 +354,6 @@ export default function AdminDashboard() {
     else { showToast('Vehicle removed'); fetchAll(); }
   };
 
-  // ── User CRUD ─────────────────────────────────────────────
-  const openAddUser = () => {
-    setSelectedUser(null);
-    setUForm({ username: '', is_staff: false, profile: { employee_id: '', department: '', phone: '' } });
-    setModalType('addUser');
-  };
-
-  const openEditUser = (u) => {
-    setSelectedUser(u);
-    setUForm({ username: u.username, is_staff: u.is_staff, profile: u.profile });
-    setModalType('editUser');
-  };
-
-  const saveUser = async () => {
-    try {
-      const isEdit  = modalType === 'editUser';
-      const payload = {
-        employee_id: uForm.profile.employee_id,
-        department:  uForm.profile.department,
-        phone:       uForm.profile.phone,
-        role:        uForm.is_staff ? 'admin' : 'user',
-      };
-
-      let error;
-      if (isEdit) {
-        if (!selectedUser?.id) return showToast('No user selected', 'err');
-        ({ error } = await supabase.from('employee_profiles').update(payload).eq('id', selectedUser.id));
-      } else {
-        ({ error } = await supabase.from('employee_profiles').insert([payload]));
-      }
-
-      if (error) throw error;
-      showToast(isEdit ? 'User updated' : 'User added');
-      setModalType('');
-      fetchAll();
-    } catch (err) { showToast(err.message, 'err'); }
-  };
-
   // ── Booking Actions (availability + formatted email) ──────
   const bookingAction = async (id, status, vehicleId = null, driverId = null) => {
     const booking = bookings.find(x => x.id === id);
@@ -438,10 +429,20 @@ export default function AdminDashboard() {
     navigate('/admin-login');
   };
 
-  // ── First load spinner ────────────────────────────────────
+  // ── First load screen ─────────────────────────────────────
   if (loading) return (
     <div className="admin-loading">
-      <div className="spinner">Loading System...</div>
+      <div className="admin-loading-logos">
+        <img src="/assets/images/DAR-FLEET.png" alt="DAR Fleet" className="admin-loading-logo" />
+        <span className="admin-loading-x">×</span>
+        <img src="/assets/images/PQ-LOGO.png" alt="PQ" className="admin-loading-logo" />
+      </div>
+      <p className="admin-loading-label">Loading System...</p>
+      <div className="admin-loading-road">
+        <div className="admin-loading-car">
+          <img src="/assets/images/car.png" alt="" />
+        </div>
+      </div>
     </div>
   );
 
@@ -449,21 +450,44 @@ export default function AdminDashboard() {
   return (
     <div className="admin-root">
       <aside className="admin-sidebar">
-        <div className="admin-logo">Fleet<span>Dispatch</span></div>
+        <div className="admin-logo">
+          {/* Primary brand — large app-icon style */}
+          <div className="admin-logo-primary">
+            <img src="/assets/images/DAR-FLEET.png" alt="DAR FleetDispatch" className="admin-logo-main-img" />
+          </div>
+          {/* Separator */}
+          <div className="admin-logo-sep">
+            <span />
+            <span className="admin-logo-x">×</span>
+            <span />
+          </div>
+          {/* Secondary brand — small with label */}
+          <div className="admin-logo-secondary">
+            <div className="admin-logo-pq-wrap">
+              <img src="/assets/images/PQ-LOGO.png" alt="Penta Quail" className="admin-logo-pq-img" />
+            </div>
+            <span className="admin-logo-pq-label">PENTA QUAIL</span>
+          </div>
+        </div>
         {NAV.map(n => (
           <div
             key={n.key}
             className={`admin-nav ${tab === n.key ? 'active' : ''}`}
             onClick={() => setTab(n.key)}
           >
-            <span className="admin-icon">{n.icon}</span>
+            <span className="admin-icon">{NAV_ICONS[n.key]}</span>
             <span>{n.label}</span>
             {n.key === 'bookings' && stats.pendingBookings > 0 && (
               <span className="admin-badge-notif">{stats.pendingBookings}</span>
             )}
           </div>
         ))}
-        <div className="admin-footer">FleetDispatch v2.0</div>
+        <div className="admin-footer">
+          <span className="admin-footer-brand">DAR 10 Fleet Dispatch</span>
+          <span className="admin-footer-x">×</span>
+          <span className="admin-footer-partner">Penta Quail</span>
+          <span className="admin-footer-year">© 2026</span>
+        </div>
       </aside>
 
       <main className="admin-main">
@@ -476,11 +500,37 @@ export default function AdminDashboard() {
             <div className="admin-user-menu">
               <button className="admin-user-btn" onClick={() => setShowUserMenu(!showUserMenu)}>
                 <span className="admin-avatar">{(adminUser.username || 'A')[0].toUpperCase()}</span>
-                <span>{adminUser.username || 'Admin'}</span>
+                <div className="admin-user-info">
+                  <span className="admin-user-name">{adminUser.username || 'Admin'}</span>
+                  <span className="admin-user-role">Administrator</span>
+                </div>
+                <svg className={`admin-user-chevron ${showUserMenu ? 'open' : ''}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
               </button>
+
               {showUserMenu && (
                 <div className="admin-dropdown">
-                  <button className="admin-dropdown-item" onClick={logout}>Logout</button>
+                  {/* Profile header */}
+                  <div className="admin-dropdown-profile">
+                    <span className="admin-avatar admin-avatar-lg">{(adminUser.username || 'A')[0].toUpperCase()}</span>
+                    <div>
+                      <div className="admin-dropdown-username">{adminUser.username || 'Admin'}</div>
+                      <span className="admin-dropdown-role-badge">Administrator</span>
+                    </div>
+                  </div>
+
+                  <div className="admin-dropdown-divider" />
+
+                  {/* Logout */}
+                  <button className="admin-dropdown-item admin-dropdown-logout" onClick={logout}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                      <polyline points="16 17 21 12 16 7" />
+                      <line x1="21" y1="12" x2="9" y2="12" />
+                    </svg>
+                    Sign Out
+                  </button>
                 </div>
               )}
             </div>
@@ -503,7 +553,7 @@ export default function AdminDashboard() {
           />
         </div>
 
-        <div style={{ display: tab === 'vehicles' ? 'block' : 'none' }}>
+        <div style={{ display: tab === 'vehicles' ? 'block' : 'none', paddingTop: '20px' }}>
           <VehiclesPage
             vehicles={vehicles}
             sortedVehicles={sortedVehicles}
@@ -516,19 +566,7 @@ export default function AdminDashboard() {
           />
         </div>
 
-        <div style={{ display: tab === 'users' ? 'block' : 'none' }}>
-          <UsersPage
-            users={users}
-            onAdd={openAddUser}
-            onEdit={openEditUser}
-            onDelete={(id) => {
-              if (window.confirm('Delete user?'))
-                supabase.from('employee_profiles').delete().eq('id', id).then(fetchAll);
-            }}
-          />
-        </div>
-
-        <div style={{ display: tab === 'bookings' ? 'block' : 'none' }}>
+        <div style={{ display: tab === 'bookings' ? 'block' : 'none', paddingTop: '20px' }}>
           <BookingsPage
             bookings={bookings}
             vehicles={vehicles}
@@ -540,7 +578,7 @@ export default function AdminDashboard() {
           />
         </div>
 
-        <div style={{ display: tab === 'drivers' ? 'block' : 'none' }}>
+        <div style={{ display: tab === 'drivers' ? 'block' : 'none', paddingTop: '20px' }}>
           <DriversPage
             drivers={drivers}
             fleets={fleets}
@@ -549,7 +587,7 @@ export default function AdminDashboard() {
           />
         </div>
 
-        <div style={{ display: tab === 'fleets' ? 'block' : 'none' }}>
+        <div style={{ display: tab === 'fleets' ? 'block' : 'none', paddingTop: '20px' }}>
           <FleetsPage
             bookings={ongoingBookings}
             fleets={fleets}
@@ -561,7 +599,7 @@ export default function AdminDashboard() {
           />
         </div>
 
-        <div style={{ display: tab === 'logs' ? 'block' : 'none' }}>
+        <div style={{ display: tab === 'logs' ? 'block' : 'none', paddingTop: '20px' }}>
           <VehicleLogsPage
             logs={vehicleLogs}
             loading={logsLoading}
@@ -570,7 +608,7 @@ export default function AdminDashboard() {
           />
         </div>
 
-        <div style={{ display: tab === 'financial' ? 'block' : 'none' }}>
+        <div style={{ display: tab === 'financial' ? 'block' : 'none', paddingTop: '20px' }}>
           <FinancialPage />
         </div>
 
@@ -603,15 +641,6 @@ export default function AdminDashboard() {
         />
       )}
 
-      {(modalType === 'addUser' || modalType === 'editUser') && (
-        <UserFormModal
-          mode={modalType === 'addUser' ? 'add' : 'edit'}
-          data={uForm}
-          onChange={setUForm}
-          onSave={saveUser}
-          onClose={() => setModalType('')}
-        />
-      )}
     </div>
   );
 }

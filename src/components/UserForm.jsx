@@ -76,6 +76,8 @@ export default function DispatchForm() {
     purposeDetails: '',
     priority: 'Normal',
   })
+  const [isTransitioning, setIsTransitioning] = useState(false)
+  const [transitionDir, setTransitionDir]     = useState('forward')
   const [submitted, setSubmitted]       = useState(false)
   const [showSummary, setShowSummary]   = useState(false)
   const [status, setStatus]             = useState('Pending')
@@ -96,7 +98,7 @@ export default function DispatchForm() {
       if (!form.email)        newErrors.email        = 'Your email is required'
       if (!form.employeeName) newErrors.employeeName = 'Your name is required'
       if (!form.department)   newErrors.department   = 'Please select your department'
-      if (form.passengerCount < 1) newErrors.passengerCount = 'At least 1 passenger required';
+      if (!form.passengerCount || Number(form.passengerCount) < 1) newErrors.passengerCount = 'At least 1 passenger required';
     }
     if (step === 2) {
       if (!form.requestDate)    newErrors.requestDate    = 'Request date is required'
@@ -115,10 +117,17 @@ export default function DispatchForm() {
   function handleNext()   { if (!validateStep()) return; setStep(s => s + 1) }
   function handleSubmit() { if (!validateStep()) return; submitToSupabase() }
 
+  function navigateWithCar(url, dir = 'forward') {
+    if (isTransitioning) return
+    setTransitionDir(dir)
+    setIsTransitioning(true)
+    setTimeout(() => navigate(url), 900)
+  }
+
   // ── Back button: go home on step 1, previous step otherwise ──
   function handleBack() {
     if (step === 1) {
-      navigate('/')
+      navigateWithCar('/', 'back')
     } else {
       setStep(s => s - 1)
     }
@@ -190,6 +199,23 @@ export default function DispatchForm() {
 
       if (error) throw error
 
+      // ─── INSERT THE NEW CODE HERE ───
+      try {
+        await supabase.functions.invoke('notify-admin-booking', {
+          body: {
+            employeeName: form.employeeName,
+            department: form.department,
+            destination: form.destination,
+            purpose: form.purpose,
+            startDate: new Date(`${form.requestDate}T${form.departureTime}`).toLocaleString(),
+          },
+        })
+      } catch (notifyError) {
+        console.error('Admin notification failed:', notifyError)
+        // We don't throw here so the user still sees their booking was successful
+      }
+      // ────────────────────────────────
+
       setStatus('Pending')
       setSubmitted(true)
       setShowSummary(true)
@@ -234,6 +260,7 @@ export default function DispatchForm() {
   ]
 
   return (
+    <>
     <div className="fd-page">
       <div className="fd-container-modern">
 
@@ -248,7 +275,9 @@ export default function DispatchForm() {
         {/* Header */}
         <header className="fd-header-modern">
           <div className="fd-header-left">
-            <div className="fd-logo"><TruckIcon /></div>
+            <div className="fd-logo">
+              <img src="/assets/images/Company_Logo.png" alt="DAR Logo" />
+            </div>
             <div className="fd-header-info">
               <h1>Vehicle Request</h1>
               <span className="fd-date">
@@ -302,7 +331,7 @@ export default function DispatchForm() {
             </div>
             <div className="fd-summary-actions">
               <button className="fd-btn fd-btn-outline" onClick={handleReset}>Fill Out Again</button>
-              <button className="fd-btn fd-btn-primary" onClick={() => navigate('/')}>Close</button>
+              <button className="fd-btn fd-btn-primary" onClick={() => navigateWithCar('/', 'back')}>Close</button>
             </div>
           </div>
         )}
@@ -339,9 +368,10 @@ export default function DispatchForm() {
                       type="number" 
                       min="1" 
                       max="50"
-                      value={form.passengerCount} 
-                      onChange={e => set('passengerCount', parseInt(e.target.value) || 1)} 
-                      className={errors.passengerCount ? 'error' : ''} 
+                      value={form.passengerCount}
+                      onChange={e => set('passengerCount', e.target.value)}
+                      onBlur={e => set('passengerCount', Math.max(1, Math.min(50, parseInt(e.target.value) || 1)))}
+                      className={errors.passengerCount ? 'error' : ''}
                     />
                     {errors.passengerCount && <span className="fd-error">{errors.passengerCount}</span>}
                   </div>
@@ -408,6 +438,51 @@ export default function DispatchForm() {
                     <label>Purpose Details (Optional)</label>
                     <textarea value={form.purposeDetails} onChange={e => set('purposeDetails', e.target.value)} placeholder="Provide additional details about your errand or trip..." rows={3} />
                   </div>
+
+                  {/* Document attachment */}
+                  <div className="fd-field full">
+                    <label>Supporting Document (Optional)</label>
+                    <label
+                      htmlFor="fd-doc-upload"
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '12px',
+                        padding: '11px 14px', borderRadius: '10px', cursor: 'pointer',
+                        border: documentFile ? '1.5px solid #10b981' : '1.5px dashed #cbd5e1',
+                        background: documentFile ? '#f0fdf4' : '#f8fafc',
+                        transition: 'border-color 0.18s, background 0.18s',
+                      }}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={documentFile ? '#10b981' : '#94a3b8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                      </svg>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        {documentFile ? (
+                          <>
+                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{documentFile.name}</div>
+                            <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 600 }}>{(documentFile.size / 1024).toFixed(1)} KB — click to change</div>
+                          </>
+                        ) : (
+                          <>
+                            <div style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>Attach a file</div>
+                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>PDF, JPG, PNG — max 5 MB</div>
+                          </>
+                        )}
+                      </div>
+                      {documentFile && (
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      )}
+                      <input
+                        id="fd-doc-upload"
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={handleDocumentUpload}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                  </div>
+
                 </div>
               </div>
             )}
@@ -441,5 +516,13 @@ export default function DispatchForm() {
 
       </div>
     </div>
+
+      {/* Car flyby — outside page container so it always renders */}
+      <div className={`fd-car-transition ${isTransitioning ? 'active' : ''} ${transitionDir === 'back' ? 'reverse' : ''}`} aria-hidden="true">
+        <div className="fd-car-runner">
+          <img src="/assets/images/car.png" alt="car" />
+        </div>
+      </div>
+    </>
   )
 }

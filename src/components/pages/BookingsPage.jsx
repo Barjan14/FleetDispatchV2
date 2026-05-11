@@ -129,16 +129,15 @@ export default function BookingsPage({
               <th>Requester</th>
               <th>Trip Details</th>
               <th>Schedule</th>
-              <th>Assignment</th>
               <th>Status</th>
-              <th>Actions</th>
+              <th>Assignment & Action</th>
             </tr>
           </thead>
 
           <tbody>
             {activeBookings.length === 0 && (
               <tr>
-                <td colSpan={6} className="admin-empty" style={{ padding: '40px' }}>
+                <td colSpan={5} className="admin-empty" style={{ padding: '40px' }}>
                   No active requests. You're all caught up!
                 </td>
               </tr>
@@ -151,126 +150,139 @@ export default function BookingsPage({
               const selectedVehicle = assignments[b.id]?.vehicleId ?? b.vehicle_id ?? '';
               const selectedDriver = assignments[b.id]?.driverId ?? b.driver_id ?? '';
 
-              // ✅ Pass the `vehicles` array so it can look up the plate number!
               const reqInfo = extractRequesterInfo(b, vehicles);
+              const canApprove = selectedVehicle && selectedDriver;
 
               return (
-                <tr 
-                  key={b.id} 
-                  style={{ cursor: 'pointer', transition: 'background-color 0.2s' }}
+                <tr
+                  key={b.id}
+                  style={{ cursor: 'pointer' }}
                   onClick={() => onViewDetails && onViewDetails(b)}
                 >
                   <td style={{ verticalAlign: 'middle' }}>
-                    <div className="admin-bold" style={{ color: '#0f172a', fontSize: '14px' }}>
+                    <div className="admin-bold" style={{ color: '#0f172a', fontSize: '13.5px' }}>
                       {reqInfo.name}
                     </div>
-                    <div className="admin-muted-sm" style={{ color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px', fontWeight: '600' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '3px', fontSize: '11.5px', color: '#64748b', fontWeight: 600 }}>
                       <Icons.Briefcase /> {reqInfo.dept}
                     </div>
                     {reqInfo.email !== 'Not Provided' && (
-                      <div className="admin-muted-sm" style={{ color: '#2563eb', marginTop: '2px' }}>
+                      <div style={{ fontSize: '11px', color: '#2563eb', marginTop: '2px' }}>
                         {reqInfo.email}
                       </div>
                     )}
                   </td>
 
                   <td style={{ verticalAlign: 'middle' }}>
-                    <div className="admin-bold" style={{ maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '6px' }} title={b.destination}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 600, fontSize: '13px', color: '#0f172a', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={b.destination}>
                       <Icons.MapPin /> {b.destination || '—'}
                     </div>
-                    <div className="admin-muted-sm" style={{ maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '4px' }} title={b.purpose}>
+                    <div style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '3px', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={b.purpose}>
                       {b.purpose || '—'}
                     </div>
                   </td>
 
-                  <td style={{ verticalAlign: 'middle' }}>
-                    <div className="admin-bold-sm" style={{ color: '#059669' }}>
+                  <td style={{ verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#059669' }}>
                       {formatShortDate(b.start_datetime)}
                     </div>
-                    <div className="admin-muted-sm">
-                      to {formatShortDate(b.end_datetime)}
+                    <div style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '2px' }}>
+                      → {formatShortDate(b.end_datetime)}
                     </div>
                   </td>
 
                   <td style={{ verticalAlign: 'middle' }}>
+                    <span className={`admin-badge ${bookBadge(b.status)}`} style={{ fontSize: '11px' }}>{b.status}</span>
+                  </td>
+
+                  {/* Merged assignment + action cell */}
+                  <td style={{ verticalAlign: 'middle' }} onClick={(e) => e.stopPropagation()}>
                     {b.status === 'Pending' ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', minWidth: '180px' }}>
+                        {/* Dropdowns */}
                         <select
                           value={selectedVehicle}
-                          onClick={(e) => e.stopPropagation()} 
                           onChange={(e) => setAssignment(b.id, 'vehicleId', e.target.value)}
-                          className="admin-btn admin-btn-outline"
-                          style={{ padding: '4px 8px', fontSize: '11px', width: '160px' }}
+                          style={{
+                            padding: '6px 10px', fontSize: '12px',
+                            border: '1px solid #e2e8f0', borderRadius: '6px',
+                            background: '#f8fafc', color: selectedVehicle ? '#0f172a' : '#94a3b8',
+                            outline: 'none', fontFamily: 'inherit', width: '100%',
+                          }}
                         >
-                          <option value="">Select Vehicle</option>
+                          <option value="">Vehicle</option>
                           {availableVehicles.map(v => (
-                            <option key={v.id} value={v.id}>{v.name} ({v.plate_number})</option>
+                            <option key={v.id} value={v.id}>{v.name} — {v.plate_number}</option>
                           ))}
                         </select>
                         <select
                           value={selectedDriver}
-                          onClick={(e) => e.stopPropagation()} 
                           onChange={(e) => setAssignment(b.id, 'driverId', e.target.value)}
-                          className="admin-btn admin-btn-outline"
-                          style={{ padding: '4px 8px', fontSize: '11px', width: '160px' }}
+                          style={{
+                            padding: '6px 10px', fontSize: '12px',
+                            border: '1px solid #e2e8f0', borderRadius: '6px',
+                            background: '#f8fafc', color: selectedDriver ? '#0f172a' : '#94a3b8',
+                            outline: 'none', fontFamily: 'inherit', width: '100%',
+                          }}
                         >
-                          <option value="">Select Driver</option>
+                          <option value="">Driver</option>
                           {availableDrivers.map(d => (
-                            <option key={d.id} value={d.id}>{d.name ? d.name : `Driver #${d.id?.toString().slice(0, 5)}`}</option>
+                            <option key={d.id} value={d.id}>{d.name || `Driver #${d.id?.toString().slice(0,5)}`}</option>
                           ))}
                         </select>
+
+                        {/* Action buttons */}
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button
+                            onClick={() => {
+                              if (!canApprove) {
+                                alert('Please assign both a vehicle and a driver before approving.');
+                                return;
+                              }
+                              onApprove(b.id, selectedVehicle, selectedDriver);
+                            }}
+                            style={{
+                              flex: 1, padding: '7px 0', fontSize: '12px', fontWeight: 700,
+                              background: canApprove ? '#16a34a' : '#e2e8f0',
+                              color: canApprove ? '#fff' : '#94a3b8',
+                              border: 'none', borderRadius: '6px', cursor: canApprove ? 'pointer' : 'not-allowed',
+                              transition: 'background 0.15s, transform 0.1s',
+                              letterSpacing: '0.2px',
+                            }}
+                            onMouseEnter={e => { if (canApprove) e.currentTarget.style.background = '#15803d'; }}
+                            onMouseLeave={e => { if (canApprove) e.currentTarget.style.background = '#16a34a'; }}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => onReject(b.id)}
+                            style={{
+                              flex: 1, padding: '7px 0', fontSize: '12px', fontWeight: 600,
+                              background: 'transparent',
+                              color: '#ef4444',
+                              border: '1px solid #fca5a5', borderRadius: '6px', cursor: 'pointer',
+                              transition: 'background 0.15s, border-color 0.15s',
+                              letterSpacing: '0.2px',
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.borderColor = '#f87171'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#fca5a5'; }}
+                          >
+                            Reject
+                          </button>
+                        </div>
                       </div>
                     ) : (
-                      <div className="admin-muted-sm" style={{ lineHeight: '1.4' }}>
-                          <div className="admin-bold-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Icons.Car /> {b.vehicle?.name || 'Assigned'}
-                          </div>
-                          <div style={{ fontSize: '11px', color: '#64748b', paddingLeft: '20px', marginTop: '2px' }}>
-                            Plate: {reqInfo.plate}
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
-                            <Icons.User /> {b.driver?.name || 'N/A'}
-                          </div>
+                      <div style={{ lineHeight: '1.6' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 600, fontSize: '12px', color: '#1e293b' }}>
+                          <Icons.Car /> {b.vehicle?.name || 'Assigned'}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#94a3b8', paddingLeft: '19px' }}>
+                          {reqInfo.plate}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: '#64748b', marginTop: '3px' }}>
+                          <Icons.User /> {b.driver?.name || 'N/A'}
+                        </div>
                       </div>
-                    )}
-                  </td>
-
-                  <td style={{ verticalAlign: 'middle' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
-                      <span className={`admin-badge ${bookBadge(b.status)}`} style={{ fontSize: '11px' }}>{b.status}</span>
-                    </div>
-                  </td>
-
-                  <td style={{ verticalAlign: 'middle' }}>
-                    {b.status === 'Pending' ? (
-                      <div className="admin-actions" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                        <button
-                          className="admin-btn admin-btn-success"
-                          style={{ padding: '4px 10px', fontSize: '11px', fontWeight: 'bold' }}
-                          onClick={(e) => {
-                            e.stopPropagation(); 
-                            if (!selectedVehicle || !selectedDriver) {
-                              alert('Please assign both a vehicle and a driver before approving.');
-                              return;
-                            }
-                            onApprove(b.id, selectedVehicle, selectedDriver);
-                          }}
-                        >
-                          Approve
-                        </button>
-                        <button 
-                          className="admin-btn admin-btn-danger" 
-                          style={{ padding: '4px 10px', fontSize: '11px', fontWeight: 'bold' }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onReject(b.id);
-                          }}
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    ) : (
-                      <span className="admin-muted-sm" style={{ fontStyle: 'italic', color: '#9ca3af' }}>Managed in Fleets</span>
                     )}
                   </td>
                 </tr>

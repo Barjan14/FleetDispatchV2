@@ -1,87 +1,174 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import '../styles/Login.css';
+import '../styles/AboutModal.css';
+import bgVideo from '../assets/videos/bg_video.mp4';
+import AboutModal from './AboutModal';
 
 const Login = () => {
-  const [exitAnimation, setExitAnimation] = useState(false);
+  const [exitAnimation, setExitAnimation]     = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [tilt, setTilt]                       = useState({ x: 0, y: 0 });
+  const [ripples, setRipples]                 = useState([]);
+  const [btnPressed, setBtnPressed]           = useState(null);
+  const [showAbout, setShowAbout]             = useState(false);
 
+  const cardRef  = useRef(null);
+  const rippleId = useRef(0);
+
+  /* ── Routing (untouched) ──────────────────────────────────── */
   const navigateTo = (url) => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
     setExitAnimation(true);
-    setTimeout(() => {
-      window.location.href = url;
-    }, 800);
-  };    return (
-    <div className={`login-container user-login ${exitAnimation ? 'exit-animation' : ''}`}>
-      {/* Company Logo */}
-      <div className="company-logo">
-        <img 
-          src="/public/assets/images/Company_Logo.png" 
-          alt="Company Logo"
-        />
-      </div>
+    setTimeout(() => { window.location.href = url; }, 900);
+  };
 
-      {/* Background Image with Car - Full Screen */}
-      <div className="login-image-section">
-        <div className="background-image-wrapper">
-          <img 
-            src="/assets/images/background_1.png" 
-            alt="Background"
-          />        </div>        <div className="car-wrapper">
-          <div className="car-circle-wrapper">
-            <img 
-              className="login-car"
-              src="/assets/images/car.png" 
-              alt="Fleet Vehicle"
-            />
-          </div>
+  /* ── 3-D card tilt ────────────────────────────────────────── */
+  const handleMouseMove = useCallback((e) => {
+    const card = cardRef.current;
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const cx   = rect.left + rect.width  / 2;
+    const cy   = rect.top  + rect.height / 2;
+    const dx   = (e.clientX - cx) / (rect.width  / 2);
+    const dy   = (e.clientY - cy) / (rect.height / 2);
+    setTilt({ x: dy * -6, y: dx * 6 });
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setTilt({ x: 0, y: 0 });
+  }, []);
+
+  /* ── Click ripple ─────────────────────────────────────────── */
+  const triggerRipple = (e, btnKey) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const id   = ++rippleId.current;
+    setRipples(prev => [
+      ...prev,
+      { id, x: e.clientX - rect.left, y: e.clientY - rect.top, btn: btnKey },
+    ]);
+    setTimeout(() => setRipples(prev => prev.filter(r => r.id !== id)), 700);
+  };
+
+  return (
+    <>
+      <div className={`login-container user-login ${exitAnimation ? 'exit-animation' : ''}`}>
+
+        {/* ── Video Background — sits behind everything ────────── */}
+        <div className="video-bg">
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            src={bgVideo}
+          />
+          <div className="video-overlay" />
         </div>
-      </div>
 
-      {/* Floating Form Box - Centered and Above Background */}
-      <div className="login-form-container">
-        <div className="login-card">
-          {/* Logo and Header */}
-          <div className="login-header">
-            <div className="logo-container">
-              <div className="logo-icon">
-                <svg viewBox="0 0 100 100" className="logo-svg">
-                  <circle cx="50" cy="30" r="8" fill="white"/>
-                  <rect x="30" y="45" width="40" height="15" rx="3" fill="white" opacity="0.8"/>
-                  <circle cx="40" cy="65" r="8" fill="white"/>
-                  <circle cx="60" cy="65" r="8" fill="white"/>
-                  <line x1="35" y1="50" x2="25" y2="40" stroke="white" strokeWidth="2"/>
-                  <line x1="65" y1="50" x2="75" y2="40" stroke="white" strokeWidth="2"/>
-                </svg>
+        {/* ── Floating particles ──────────────────────────────── */}
+        <div className="particles" aria-hidden="true">
+          {Array.from({ length: 18 }).map((_, i) => (
+            <span key={i} className={`particle particle-${i + 1}`} />
+          ))}
+        </div>
+
+        {/* ── All content stacked vertically in the center ─────── */}
+        <div className="login-content">
+
+          {/* Login Card */}
+          <div
+            className="login-card"
+            ref={cardRef}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+            style={{
+              transform: `perspective(900px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
+            }}
+          >
+            {/* Shine that follows mouse tilt */}
+            <div
+              className="card-shine"
+              style={{
+                background: `radial-gradient(
+                  circle at ${50 + tilt.y * 5}% ${50 + tilt.x * 5}%,
+                  rgba(255,255,255,0.18) 0%,
+                  transparent 65%
+                )`,
+              }}
+            />
+
+            {/* Header */}
+            <div className="login-header">
+              <div className="logo-container">
+                <img className="brand-logo" src="/assets/images/Company_Logo.png" alt="DAR Logo" draggable="false" />
+              </div>
+              <h1 className="logo-text">FLEET DISPATCH</h1>
+              <p className="header-subtitle">Select your login option</p>
+            </div>
+
+            {/* Buttons */}
+            <div className="login-form-box">
+              <div className="login-buttons-container">
+
+                <button
+                  type="button"
+                  className={`btn btn-request ${btnPressed === 'request' ? 'btn-pressing' : ''}`}
+                  onMouseDown={() => setBtnPressed('request')}
+                  onMouseUp={() => setBtnPressed(null)}
+                  onMouseLeave={() => setBtnPressed(null)}
+                  onClick={(e) => { triggerRipple(e, 'request'); navigateTo('/request-form'); }}
+                >
+                  {ripples.filter(r => r.btn === 'request').map(r => (
+                    <span key={r.id} className="btn-ripple" style={{ left: r.x, top: r.y }} />
+                  ))}
+                  <span>Request Form</span>
+                </button>
+
+                <div className="btn-divider"><span>or</span></div>
+
+                <button
+                  type="button"
+                  className={`btn btn-admin ${btnPressed === 'admin' ? 'btn-pressing' : ''}`}
+                  onMouseDown={() => setBtnPressed('admin')}
+                  onMouseUp={() => setBtnPressed(null)}
+                  onMouseLeave={() => setBtnPressed(null)}
+                  onClick={(e) => { triggerRipple(e, 'admin'); navigateTo('/admin-login'); }}
+                >
+                  {ripples.filter(r => r.btn === 'admin').map(r => (
+                    <span key={r.id} className="btn-ripple btn-ripple--green" style={{ left: r.x, top: r.y }} />
+                  ))}
+                  <span>Login as Admin</span>
+                </button>
+
               </div>
             </div>
-            <h1 className="logo-text">FLEET DISPATCH</h1>
-            <p className="header-subtitle">Select your login option</p>
-          </div>
 
-          {/* Form Box Container */}
-          <div className="login-form-box">
-            {/* Button Container */}            <div className="login-buttons-container">
-              {/* Request Form Button */}
-              <button
-                type="button"
-                className="btn btn-request"
-                onClick={() => navigateTo('/request-form')}
-              >
-                Request Form
-              </button>
-
-              {/* Admin Login Button */}
-              <button
-                type="button"
-                className="btn btn-admin"
-                onClick={() => navigateTo('/admin-login')}
-              >
-                Login as Admin
-              </button>
-            </div>
           </div>
         </div>
+
       </div>
-    </div>
+
+      {/* Car flyby — outside login-container so exit fade never kills it */}
+      <div className={`page-transition ${isTransitioning ? 'active' : ''}`} aria-hidden="true">
+        <div className="car-runner">
+          <img src="/assets/images/car.png" alt="car" />
+        </div>
+      </div>
+
+      {/* ── Floating ? button ── */}
+      <button
+        className="am-help-btn"
+        onClick={() => setShowAbout(true)}
+        aria-label="About Fleet Dispatch"
+        title="About & Help"
+      >
+        ?
+      </button>
+
+      {/* ── About modal ── */}
+      {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
+    </>
   );
 };
 
