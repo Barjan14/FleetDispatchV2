@@ -6,7 +6,6 @@ import { supabase } from '../supabaseClient';
 // Page Components
 import OverviewPage from './pages/OverviewPage';
 import VehiclesPage from './pages/VehiclesPage';
-import UsersPage from './pages/UsersPage';
 import BookingsPage from './pages/BookingsPage';
 import DriversPage from './pages/DriversPage';
 import FleetsPage from './pages/FleetsPage';
@@ -17,7 +16,6 @@ import FinancialPage from './pages/FinancialPage';
 // Modal Components
 import VehicleDetailsModal from './modals/VehicleDetailsModal';
 import VehicleFormModal from './modals/VehicleFormModal';
-import UserFormModal from './modals/UserFormModal';
 import BookingDetailsModal from './modals/BookingDetailsModal';
 
 // Utilities
@@ -29,14 +27,6 @@ const NAV_ICONS = {
       <rect x="18" y="3" width="4" height="18" rx="1"/>
       <rect x="10" y="8" width="4" height="13" rx="1"/>
       <rect x="2" y="13" width="4" height="8" rx="1"/>
-    </svg>
-  ),
-  users: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-      <circle cx="9" cy="7" r="4"/>
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
     </svg>
   ),
   vehicles: (
@@ -86,7 +76,6 @@ const NAV_ICONS = {
 
 const NAV = [
   { key: 'overview',  label: 'Overview'      },
-  { key: 'users',     label: 'Users'         },
   { key: 'vehicles',  label: 'Vehicles'      },
   { key: 'drivers',   label: 'Drivers'       },
   { key: 'bookings',  label: 'Bookings'      },
@@ -138,7 +127,6 @@ export default function AdminDashboard() {
   const [adminUser, setAdminUser]             = useState({});
   const [stats, setStats]                     = useState({});
   const [vehicles, setVehicles]               = useState([]);
-  const [users, setUsers]                     = useState([]);
   const [drivers, setDrivers]                 = useState([]);
   const [fleets, setFleets]                   = useState([]);
   const [bookings, setBookings]               = useState([]);
@@ -150,17 +138,12 @@ export default function AdminDashboard() {
 
   const [modalType, setModalType]             = useState('');
   const [selectedVehicle, setSelectedVehicle] = useState(null);
-  const [selectedUser, setSelectedUser]       = useState(null);
   const [selectedBooking, setSelectedBooking] = useState(null);
 
   const [vForm, setVForm] = useState({
     name: '', plate_number: '', model: '', year: '',
     fuel_type: 'Diesel', condition: 'Good', odometer_km: 0,
     is_available: true, fleet_id: '', image_url: '',
-  });
-  const [uForm, setUForm] = useState({
-    username: '', is_staff: false,
-    profile: { employee_id: '', department: '', phone: '' },
   });
 
   const initialLoadDone = useRef(false);
@@ -189,9 +172,8 @@ export default function AdminDashboard() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate('/admin-login'); return; }
 
-      const [vRes, uRes, fRes, bRes, dRes, cV, cU, cF, cB, cP, cO] = await Promise.all([
+      const [vRes, fRes, bRes, dRes, cV, cF, cB, cP, cO] = await Promise.all([
         supabase.from('vehicles').select('*').order('name'),
-        supabase.from('employee_profiles').select('*').order('created_at'),
         supabase.from('fleets').select('*, vehicles(id)'),
         supabase
           .from('vehicle_bookings')
@@ -205,7 +187,6 @@ export default function AdminDashboard() {
           .order('start_datetime', { ascending: false }),
         supabase.from('driver_profiles').select('*').order('name'),
         supabase.from('vehicles').select('*', { count: 'exact', head: true }),
-        supabase.from('employee_profiles').select('*', { count: 'exact', head: true }),
         supabase.from('fleets').select('*', { count: 'exact', head: true }),
         supabase.from('vehicle_bookings').select('*', { count: 'exact', head: true }),
         supabase.from('vehicle_bookings').select('*', { count: 'exact', head: true }).eq('status', 'Pending'),
@@ -216,24 +197,11 @@ export default function AdminDashboard() {
       setDrivers(dRes.data || []);
       setBookings(bRes.data || []);
 
-      setUsers((uRes.data || []).map(usr => ({
-        id:       usr.id,
-        user_id:  usr.user_id,
-        username: usr.employee_id || '—',
-        is_staff: usr.role === 'admin',
-        profile: {
-          employee_id: usr.employee_id || '',
-          department:  usr.department  || '',
-          phone:       usr.phone       || '',
-        },
-      })));
-
       setFleets((fRes.data || []).map(fl => ({ ...fl, vehicles: fl.vehicles || [] })));
       setOngoingBookings((bRes.data || []).filter(b => b.status === 'Ongoing' || b.status === 'Approved'));
 
       setStats({
         totalVehicles:   cV.count || 0,
-        totalUsers:      cU.count || 0,
         totalFleets:     cF.count || 0,
         totalBookings:   cB.count || 0,
         pendingBookings: cP.count || 0,
@@ -384,44 +352,6 @@ export default function AdminDashboard() {
     const { error } = await supabase.from('vehicles').delete().eq('id', id);
     if (error) showToast(error.message, 'err');
     else { showToast('Vehicle removed'); fetchAll(); }
-  };
-
-  // ── User CRUD ─────────────────────────────────────────────
-  const openAddUser = () => {
-    setSelectedUser(null);
-    setUForm({ username: '', is_staff: false, profile: { employee_id: '', department: '', phone: '' } });
-    setModalType('addUser');
-  };
-
-  const openEditUser = (u) => {
-    setSelectedUser(u);
-    setUForm({ username: u.username, is_staff: u.is_staff, profile: u.profile });
-    setModalType('editUser');
-  };
-
-  const saveUser = async () => {
-    try {
-      const isEdit  = modalType === 'editUser';
-      const payload = {
-        employee_id: uForm.profile.employee_id,
-        department:  uForm.profile.department,
-        phone:       uForm.profile.phone,
-        role:        uForm.is_staff ? 'admin' : 'user',
-      };
-
-      let error;
-      if (isEdit) {
-        if (!selectedUser?.id) return showToast('No user selected', 'err');
-        ({ error } = await supabase.from('employee_profiles').update(payload).eq('id', selectedUser.id));
-      } else {
-        ({ error } = await supabase.from('employee_profiles').insert([payload]));
-      }
-
-      if (error) throw error;
-      showToast(isEdit ? 'User updated' : 'User added');
-      setModalType('');
-      fetchAll();
-    } catch (err) { showToast(err.message, 'err'); }
   };
 
   // ── Booking Actions (availability + formatted email) ──────
@@ -636,18 +566,6 @@ export default function AdminDashboard() {
           />
         </div>
 
-        <div style={{ display: tab === 'users' ? 'block' : 'none', paddingTop: '20px' }}>
-          <UsersPage
-            users={users}
-            onAdd={openAddUser}
-            onEdit={openEditUser}
-            onDelete={(id) => {
-              if (window.confirm('Delete user?'))
-                supabase.from('employee_profiles').delete().eq('id', id).then(fetchAll);
-            }}
-          />
-        </div>
-
         <div style={{ display: tab === 'bookings' ? 'block' : 'none', paddingTop: '20px' }}>
           <BookingsPage
             bookings={bookings}
@@ -723,15 +641,6 @@ export default function AdminDashboard() {
         />
       )}
 
-      {(modalType === 'addUser' || modalType === 'editUser') && (
-        <UserFormModal
-          mode={modalType === 'addUser' ? 'add' : 'edit'}
-          data={uForm}
-          onChange={setUForm}
-          onSave={saveUser}
-          onClose={() => setModalType('')}
-        />
-      )}
     </div>
   );
 }
