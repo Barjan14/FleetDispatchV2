@@ -16,7 +16,7 @@ serve(async (req: Request) => {
     const SENDER_EMAIL = Deno.env.get('SENDER_EMAIL'); // This is the verified sender in Brevo
 
     // 2. This is the exact, specific account that RECEIVES the email
-    const ADMIN_EMAIL = "shuncyrel@gmail.com"; 
+    const ADMIN_EMAIL = "dar.regionaloffice.x@gmail.com"; 
 
     console.log("Processing new booking notification...");
 
