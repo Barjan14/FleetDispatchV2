@@ -64,17 +64,18 @@
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 50;
+  z-index: 9999;
   overflow: hidden;
 }
 
 .page-transition .car-runner {
   position: absolute;
   top: 50%;
-  left: -70vw;
+  left: 0;
   width: 60vw;
   opacity: 0;
-  transform: translateY(-50%);
+  transform: translateX(-70vw) translateY(-50%);
+  will-change: transform, opacity;
 }
 
 .page-transition.active .car-runner {
@@ -84,13 +85,19 @@
 .page-transition .car-runner img {
   width: 100%;
   height: auto;
+  display: block;
   filter: drop-shadow(0 24px 48px rgba(0,0,0,0.5));
 }
 
 @keyframes carDrive {
-  0%   { left: -70vw; opacity: 0;   transform: translateY(-50%); }
-  15%  {              opacity: 1;                                 }
-  100% { left: 110%;  opacity: 1;   transform: translateY(-50%); }
+  0%   { transform: translateX(-70vw) translateY(-50%); opacity: 0; }
+  10%  { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { transform: translateX(115vw) translateY(-50%); opacity: 0; }
+}
+
+.page-transition.reverse .car-runner {
+  transform: translateX(115vw) translateY(-50%);
 }
 
 .page-transition.reverse .car-runner img {
@@ -102,9 +109,10 @@
 }
 
 @keyframes carDriveReverse {
-  0%   { left: 110%;  opacity: 0;   transform: translateY(-50%); }
-  15%  {              opacity: 1;                                 }
-  100% { left: -70vw; opacity: 1;   transform: translateY(-50%); }
+  0%   { transform: translateX(115vw) translateY(-50%); opacity: 0; }
+  10%  { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { transform: translateX(-70vw) translateY(-50%); opacity: 0; }
 }
 
 /* ════════════════════════════════════════════════════════════

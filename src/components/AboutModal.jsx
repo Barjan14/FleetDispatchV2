@@ -28,16 +28,16 @@ const Icon = ({ name, size = 20 }) => (
 /* ── Data ─────────────────────────────────────────────────── */
 const DEVS = [
   {
-    name: 'Dev Name One',
-    role: 'Full Stack Developer',
+    name: 'Bryle',
+    role: 'FBackend Developer',
     desc: 'Led system architecture, Supabase integration, and real-time data sync across the platform.',
     img: '/assets/images/devs/dev1.jpg',
     initials: 'DN',
     color: '#f5a623',
   },
   {
-    name: 'Dev Name Two',
-    role: 'Frontend Developer',
+    name: 'Shun',
+    role: 'FBackend Developer',
     desc: 'Crafted the admin dashboard UI, component library, and interactive data visualizations.',
     img: '/assets/images/devs/dev2.jpg',
     initials: 'DN',

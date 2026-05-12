@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import * as XLSX from 'xlsx';
+import { exportToXlsx } from '../../utils/exportExcel';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -175,12 +175,10 @@ export default function VehicleLogsPage({ logs = [], loading, tripLogs = [], onR
       'Status': log.status,
       'Date Logged': new Date(log.created_at).toLocaleDateString()
     }));
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Trip Logs");
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(data, `Trip_Logs_${new Date().toISOString().split('T')[0]}.xlsx`);
+    if (dataToExport.length === 0) return;
+    const headers = Object.keys(dataToExport[0]);
+    const rows = dataToExport.map(item => Object.values(item).map(v => String(v ?? '')));
+    exportToXlsx([headers, ...rows], 'Trip Logs', `Trip_Logs_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   const exportToPDF = () => {

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import '../styles/UserForm.css'
 import { supabase } from '../supabaseClient'
-import { uploadImage, createPreviewUrl, revokePreviewUrl } from '../utils/imageUpload'
 import { useNavigate } from 'react-router-dom'
 
 const DEPARTMENTS = ['RD', 'ARDO', 'RPBDD', 'RECORDS', 'LEGAL', 'SPLIT UPTOWN', 'SPLIT DOWNTOWN', 'LTI/LTSP', 'SUPPLY', 'MOTOR POLE', 'COA', 'SPECIAL CONCERN', 'LD', 'IU', 'ARMIC', 'BUDGET/ACCOUNTING', 'CASHIER', 'FINANCE', 'GAD', 'DARAB',  'Other']
@@ -49,6 +48,10 @@ const UserIcon = () => (
 /* ── Main Component ── */
 export default function DispatchForm() {
   const today = new Date().toISOString().split('T')[0]
+  const getCurrentTime = () => {
+    const now = new Date()
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+  }
   const navigate = useNavigate()
 
   const [step, setStep] = useState(1)
@@ -58,7 +61,7 @@ export default function DispatchForm() {
     department: '',
     passengerCount: 1,
     requestDate: today,
-    departureTime: '08:00',
+    departureTime: getCurrentTime(),
     returnDate: '',
     returnTime: '',
     origin: 'DAR Region 10',
@@ -74,8 +77,6 @@ export default function DispatchForm() {
   const [status, setStatus]             = useState('Pending')
   const [errors, setErrors]             = useState({})
   const [toastMsg, setToastMsg]         = useState('')
-  const [documentFile, setDocumentFile] = useState(null)
-  const [documentPreview, setDocumentPreview] = useState('')
   const [uploading, setUploading]       = useState(false)
 
   const set = (key, val) => {
@@ -144,17 +145,6 @@ export default function DispatchForm() {
         ? new Date(`${form.returnDate}T${form.returnTime || '17:00'}`).toISOString()
         : new Date(new Date(startDt).getTime() + 8 * 60 * 60 * 1000).toISOString()
 
-      let documentUrl = ''
-      if (documentFile) {
-        try {
-          const { url } = await uploadImage(documentFile, 'vehicle-images', `bookings/${userId}`)
-          documentUrl = url
-          if (documentPreview) revokePreviewUrl(documentPreview)
-        } catch (err) {
-          throw new Error(`Document upload failed: ${err.message}`)
-        }
-      }
-
       const { data: availableVehicles, error: vErr } = await supabase
         .from('vehicles')
         .select('id')
@@ -173,7 +163,6 @@ export default function DispatchForm() {
         `Passengers: ${form.passengerCount} seater(s) needed`,
         `Priority: ${form.priority}`,
         form.purposeDetails ? `Details: ${form.purposeDetails}` : '',
-        documentUrl ? `\nAttachment: ${documentUrl}` : '',
       ].filter(Boolean).join('\n')
 
       const { error } = await supabase.from('vehicle_bookings').insert({
@@ -221,21 +210,10 @@ export default function DispatchForm() {
     }
   }
 
-  const handleDocumentUpload = (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    try {
-      setDocumentPreview(createPreviewUrl(file))
-      setDocumentFile(file)
-    } catch (err) {
-      setToastMsg(`Error: ${err.message}`)
-    }
-  }
-
   function handleReset() {
     setForm({
       email: '', employeeName: '', department: '',
-      requestDate: today, departureTime: '08:00',
+      requestDate: today, departureTime: getCurrentTime(),
       returnDate: '', returnTime: '',
       origin: 'DAR Region 10', destination: '',
       purpose: '', purposeDetails: '', priority: 'Normal',
@@ -430,49 +408,6 @@ export default function DispatchForm() {
                     <textarea value={form.purposeDetails} onChange={e => set('purposeDetails', e.target.value)} placeholder="Provide additional details about your errand or trip..." rows={3} />
                   </div>
 
-                  {/* Document attachment */}
-                  <div className="fd-field full">
-                    <label>Supporting Document (Optional)</label>
-                    <label
-                      htmlFor="fd-doc-upload"
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: '12px',
-                        padding: '11px 14px', borderRadius: '10px', cursor: 'pointer',
-                        border: documentFile ? '1.5px solid #10b981' : '1.5px dashed #cbd5e1',
-                        background: documentFile ? '#f0fdf4' : '#f8fafc',
-                        transition: 'border-color 0.18s, background 0.18s',
-                      }}
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={documentFile ? '#10b981' : '#94a3b8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-                      </svg>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        {documentFile ? (
-                          <>
-                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{documentFile.name}</div>
-                            <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 600 }}>{(documentFile.size / 1024).toFixed(1)} KB — click to change</div>
-                          </>
-                        ) : (
-                          <>
-                            <div style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>Attach a file</div>
-                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>PDF, JPG, PNG — max 5 MB</div>
-                          </>
-                        )}
-                      </div>
-                      {documentFile && (
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                      )}
-                      <input
-                        id="fd-doc-upload"
-                        type="file"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        onChange={handleDocumentUpload}
-                        style={{ display: 'none' }}
-                      />
-                    </label>
-                  </div>
 
                 </div>
               </div>

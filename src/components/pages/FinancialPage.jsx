@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../../supabaseClient';
-import * as XLSX from 'xlsx';
+import { exportToXlsx } from '../../utils/exportExcel';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -277,12 +277,10 @@ const STATUS_BADGE = {
 
 // ── Export helpers ────────────────────────────────────────
 const generateExcel = (data, filename) => {
-  const worksheet = XLSX.utils.json_to_sheet(data);
-  const workbook  = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Records');
-  const buf  = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-  const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  saveAs(blob, `${filename}_${new Date().toISOString().split('T')[0]}.xlsx`);
+  if (data.length === 0) return;
+  const headers = Object.keys(data[0]);
+  const rows = data.map(item => Object.values(item).map(v => String(v ?? '')));
+  exportToXlsx([headers, ...rows], 'Records', `${filename}_${new Date().toISOString().split('T')[0]}.xlsx`);
 };
 
 const generatePDF = (title, columns, rows, filename) => {
