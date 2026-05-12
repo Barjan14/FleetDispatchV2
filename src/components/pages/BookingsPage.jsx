@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const Icons = {
   Refresh: () => (
@@ -94,34 +94,79 @@ export default function BookingsPage({
   onReject,
   onRefresh,
   onViewDetails,
+  initialFilter,
 }) {
   const [assignments, setAssignments] = useState({});
+  const [bookingTab, setBookingTab]   = useState(initialFilter === 'completed' ? 'completed' : 'active');
+
+  useEffect(() => {
+    if (initialFilter === 'completed') setBookingTab('completed');
+    else if (initialFilter === 'active') setBookingTab('active');
+  }, [initialFilter]);
 
   const setAssignment = (bookingId, field, value) => {
     setAssignments(prev => ({ ...prev, [bookingId]: { ...prev[bookingId], [field]: value } }));
   };
 
-  const activeBookings = bookings.filter(b => b.status === 'Pending' || b.status === 'Approved' || b.status === 'Ongoing');
+  const activeBookings    = bookings.filter(b => b.status === 'Pending' || b.status === 'Approved' || b.status === 'Ongoing');
+  const completedBookings = bookings.filter(b => b.status === 'Returned' || b.status === 'Completed' || b.status === 'Rejected');
+
+  const pendingCount = activeBookings.filter(b => b.status === 'Pending').length;
 
   return (
     <div className="admin-card">
       <div className="admin-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3>
-          Booking Inbox
-          <span className="admin-count">
-            {activeBookings.filter(b => b.status === 'Pending').length} Pending
-          </span>
-        </h3>
-        
-        <button 
-          onClick={onRefresh} 
-          className="admin-btn admin-btn-outline" 
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <h3 style={{ margin: 0 }}>
+            {bookingTab === 'active' ? 'Booking Inbox' : 'Trip History'}
+            {bookingTab === 'active' && pendingCount > 0 && (
+              <span className="admin-count">{pendingCount} Pending</span>
+            )}
+            {bookingTab === 'completed' && (
+              <span className="admin-count">{completedBookings.length}</span>
+            )}
+          </h3>
+
+          {/* Tab switcher */}
+          <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '8px', padding: '3px', gap: '2px' }}>
+            <button
+              onClick={() => setBookingTab('active')}
+              style={{
+                padding: '5px 14px', fontSize: '12px', fontWeight: 700, borderRadius: '6px', border: 'none',
+                cursor: 'pointer', transition: 'all 0.15s',
+                background: bookingTab === 'active' ? '#ffffff' : 'transparent',
+                color: bookingTab === 'active' ? '#006205' : '#64748b',
+                boxShadow: bookingTab === 'active' ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+              }}
+            >
+              Active
+            </button>
+            <button
+              onClick={() => setBookingTab('completed')}
+              style={{
+                padding: '5px 14px', fontSize: '12px', fontWeight: 700, borderRadius: '6px', border: 'none',
+                cursor: 'pointer', transition: 'all 0.15s',
+                background: bookingTab === 'completed' ? '#ffffff' : 'transparent',
+                color: bookingTab === 'completed' ? '#475569' : '#64748b',
+                boxShadow: bookingTab === 'completed' ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+              }}
+            >
+              Completed
+            </button>
+          </div>
+        </div>
+
+        <button
+          onClick={onRefresh}
+          className="admin-btn admin-btn-outline"
           style={{ padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
         >
           <Icons.Refresh /> Sync
         </button>
       </div>
 
+      {/* ── ACTIVE BOOKINGS TABLE ── */}
+      {bookingTab === 'active' && (
       <div className="admin-table-scroll">
         <table className="admin-table" style={{ fontSize: '13px' }}>
           <thead>
@@ -291,6 +336,73 @@ export default function BookingsPage({
           </tbody>
         </table>
       </div>
+      )}
+
+      {/* ── COMPLETED BOOKINGS TABLE ── */}
+      {bookingTab === 'completed' && (
+      <div className="admin-table-scroll">
+        <table className="admin-table" style={{ fontSize: '13px' }}>
+          <thead>
+            <tr>
+              <th>Requester</th>
+              <th>Trip Details</th>
+              <th>Schedule</th>
+              <th>Vehicle & Driver</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {completedBookings.length === 0 && (
+              <tr>
+                <td colSpan={5} className="admin-empty" style={{ padding: '40px' }}>
+                  No completed trips yet.
+                </td>
+              </tr>
+            )}
+            {completedBookings.map(b => {
+              const reqInfo = extractRequesterInfo(b, vehicles);
+              return (
+                <tr
+                  key={b.id}
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => onViewDetails && onViewDetails(b)}
+                >
+                  <td style={{ verticalAlign: 'middle' }}>
+                    <div className="admin-bold" style={{ color: '#0f172a', fontSize: '13.5px' }}>{reqInfo.name}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '3px', fontSize: '11.5px', color: '#64748b', fontWeight: 600 }}>
+                      <Icons.Briefcase /> {reqInfo.dept}
+                    </div>
+                  </td>
+                  <td style={{ verticalAlign: 'middle' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 600, fontSize: '13px', color: '#0f172a', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={b.destination}>
+                      <Icons.MapPin /> {b.destination || '—'}
+                    </div>
+                    <div style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '3px', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {b.purpose || '—'}
+                    </div>
+                  </td>
+                  <td style={{ verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#059669' }}>{formatShortDate(b.start_datetime)}</div>
+                    <div style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '2px' }}>→ {formatShortDate(b.end_datetime)}</div>
+                  </td>
+                  <td style={{ verticalAlign: 'middle' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 600, fontSize: '12px', color: '#1e293b' }}>
+                      <Icons.Car /> {b.vehicle?.name || '—'}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: '#64748b', marginTop: '3px' }}>
+                      <Icons.User /> {b.driver?.name || '—'}
+                    </div>
+                  </td>
+                  <td style={{ verticalAlign: 'middle' }}>
+                    <span className={`admin-badge ${bookBadge(b.status)}`} style={{ fontSize: '11px' }}>{b.status}</span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      )}
     </div>
   );
 }

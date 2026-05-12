@@ -118,6 +118,7 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
 
   const [tab, setTab]                   = useState('overview');
+  const [bookingFilter, setBookingFilter] = useState(null);
   const [loading, setLoading]           = useState(true);
   const [isFetching, setIsFetching]     = useState(false);
   const [toast, setToast]               = useState({ msg: '', type: '' });
@@ -154,6 +155,17 @@ export default function AdminDashboard() {
   const showToast = (msg, type = 'ok') => {
     setToast({ msg, type });
     setTimeout(() => setToast({ msg: '', type: '' }), 3000);
+  };
+
+  // ── Navigate (supports { tab, filter } objects from OverviewPage) ────
+  const handleNavigate = (dest) => {
+    if (dest && typeof dest === 'object') {
+      setTab(dest.tab);
+      if (dest.tab === 'bookings') setBookingFilter(dest.filter || null);
+    } else {
+      setTab(dest);
+      if (dest !== 'bookings') setBookingFilter(null);
+    }
   };
 
   // ── Auth guard ────────────────────────────────────────────
@@ -549,7 +561,7 @@ export default function AdminDashboard() {
             bookings={bookings}
             vehicles={vehicles}
             drivers={drivers}
-            onNavigate={setTab}
+            onNavigate={handleNavigate}
           />
         </div>
 
@@ -575,6 +587,7 @@ export default function AdminDashboard() {
             onReject={(id)            => bookingAction(id, 'Rejected')}
             onRefresh={fetchAll}
             onViewDetails={(b) => { setSelectedBooking(b); setModalType('bookingDetails'); }}
+            initialFilter={bookingFilter}
           />
         </div>
 

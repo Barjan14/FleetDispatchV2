@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const DriverProfileFormModal = ({ driver, fleets, vehicles, onSave, onClose }) => {
+const DriverProfileFormModal = ({ driver, vehicles, onSave, onClose }) => {
   const [formData, setFormData] = useState({
     name: '',
     license_number: '',

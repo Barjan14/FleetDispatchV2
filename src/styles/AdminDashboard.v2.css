@@ -745,18 +745,162 @@
 .b-good, .b-approved  { background: #dcfce7; color: #15803d; border-color: #86efac; }
 .b-fair               { background: #fef9c3; color: #854d0e; border-color: #fde047; }
 .b-pending            { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
-.b-ongoing            { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
+.b-ongoing            { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
 .b-repair             { background: #ede9fe; color: #5b21b6; border-color: #c4b5fd; }
 .b-out, .b-rejected   { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
 .b-returned           { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
 
-/* ================= VEHICLE CARDS (✅ Grid & Height Fixes) ================= */
+/* ================= VEHICLE CARDS ================= */
+
+/* ================= DRIVER TABLE ENHANCEMENTS ================= */
+
+.driver-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  flex-wrap: wrap;
+}
+
+.driver-filter-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1.5px solid #e2e8f0;
+  background: #fff;
+  color: #64748b;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 120ms ease;
+  white-space: nowrap;
+}
+
+.driver-filter-tab:hover { border-color: #cbd5e1; background: #f8fafc; color: #374151; }
+
+.driver-filter-tab.active {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #fff;
+}
+
+.driver-filter-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.driver-filter-count {
+  background: rgba(0,0,0,0.1);
+  border-radius: 20px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 18px;
+  text-align: center;
+}
+
+.driver-filter-tab.active .driver-filter-count { background: rgba(255,255,255,0.2); }
+
+.driver-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+
+.driver-name-cell { display: flex; align-items: center; gap: 12px; }
+.driver-name { font-weight: 700; color: #0f172a; font-size: 14px; line-height: 1.3; }
+.driver-contact { font-size: 11.5px; color: #94a3b8; margin-top: 1px; }
+
+.license-type-badge {
+  display: inline-block;
+  background: #0f172a;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 6px;
+  letter-spacing: 0.04em;
+}
+
+.license-number { font-size: 11px; color: #94a3b8; margin-top: 4px; font-family: 'Courier New', monospace; }
+
+.expiry-danger { color: #dc2626; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.expiry-warn   { color: #d97706; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+
+.expiry-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.expiry-tag-danger { background: #fee2e2; color: #b91c1c; }
+.expiry-tag-warn   { background: #fef3c7; color: #92400e; }
+
+.vehicle-assign-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.vehicle-chip-plate {
+  font-size: 10px;
+  font-weight: 800;
+  font-family: 'Courier New', monospace;
+  color: #3b82f6;
+  background: #dbeafe;
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.06em;
+}
+
+.unassigned-chip {
+  color: #94a3b8;
+  font-size: 12.5px;
+  font-style: italic;
+}
+
+.driver-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 24px;
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* ================= VEHICLE CARDS ================= */
 
 .admin-vehicle-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 24px;
-  align-items: stretch; /* Forces all cards in a row to match height */
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 20px;
+  align-items: stretch;
   width: 100%;
 }
 
@@ -771,52 +915,268 @@
   cursor: pointer;
   box-shadow: var(--ad-shadow-sm);
   transition: transform 120ms ease, box-shadow 160ms ease, border-color 160ms ease;
-  
-  /* Flex magic to push buttons to the bottom */
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 
 .admin-vehicle-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--ad-shadow);
-  border-color: rgba(0, 98, 5, 0.28);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  border-color: rgba(0, 98, 5, 0.3);
 }
 
-.admin-vehicle-media {
-  width: 100%;
-  height: 200px; 
+/* Colored status header strip */
+.admin-vehicle-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  color: #fff;
   position: relative;
-  background-color: #f3f4f6;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.admin-vehicle-header::after {
+  content: '';
+  position: absolute;
+  right: -24px;
+  bottom: -24px;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+.vcard-available { background: linear-gradient(135deg, #006205 0%, #004a1f 100%); }
+.vcard-duty      { background: linear-gradient(135deg, #d97706 0%, #b45309 100%); }
+.vcard-repair    { background: linear-gradient(135deg, #64748b 0%, #475569 100%); }
+.vcard-out       { background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); }
+
+.admin-vheader-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.18);
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0; /* Prevents image from squishing */
+  flex-shrink: 0;
 }
 
-.admin-vehicle-img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.admin-vehicle-img-placeholder { color: #9ca3af; font-size: 14px; font-weight: 500; }
-
-.admin-vehicle-body {
-  padding: 16px;
+.admin-vheader-info {
   display: flex;
   flex-direction: column;
-  flex-grow: 1; /* Pushes everything below it (actions) to the bottom edge */
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
 }
 
-.admin-vehicle-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
-.admin-vehicle-title { display: flex; flex-direction: column; gap: 4px; }
+.admin-vheader-name {
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
-.admin-vehicle-title .admin-bold { font-size: 16px; font-weight: 700; color: #111827; line-height: 1.2; margin: 0; }
-.admin-vehicle-title .admin-muted-sm { font-size: 13px; color: #6b7280; line-height: 1.4; }
-.admin-vehicle-meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
+.admin-vheader-sub {
+  font-size: 12px;
+  opacity: 0.75;
+  font-weight: 500;
+}
+
+.admin-vheader-status {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 20px;
+  padding: 4px 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* License plate widget */
+.admin-plate-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 14px 16px 4px;
+}
+
+.admin-plate {
+  display: inline-block;
+  background: #f9fafb;
+  border: 2px solid #d1d5db;
+  border-radius: 7px;
+  padding: 6px 20px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #111827;
+  text-transform: uppercase;
+  font-family: 'Courier New', Courier, monospace;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.admin-plate-lg {
+  font-size: 20px;
+  padding: 8px 28px;
+  border-radius: 9px;
+}
+
+.admin-vehicle-body {
+  padding: 8px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.admin-vehicle-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 12px; margin-top: 8px; }
+.admin-vehicle-title { display: flex; flex-direction: column; gap: 3px; }
+
+.admin-vehicle-title .admin-bold { font-size: 15px; font-weight: 700; color: #111827; line-height: 1.2; margin: 0; }
+.admin-vehicle-title .admin-muted-sm { font-size: 12px; color: #6b7280; line-height: 1.4; }
 
 .admin-vehicle-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  margin-top: auto; /* Glues the buttons to the bottom of the card */
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+/* ================= VEHICLE DETAILS MODAL ================= */
+
+.vdetail-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+.vdetail-banner::after {
+  content: '';
+  position: absolute;
+  right: -30px;
+  bottom: -30px;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  pointer-events: none;
+}
+
+.vdetail-banner-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.vdetail-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.vdetail-banner-name {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.vdetail-banner-sub {
+  font-size: 13px;
+  opacity: 0.78;
+  font-weight: 500;
+}
+
+.vdetail-banner-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.vdetail-avail-badge {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 20px;
+  padding: 5px 12px;
+}
+
+.vdetail-id {
+  font-size: 12px;
+  opacity: 0.65;
+  font-weight: 600;
+}
+
+.vdetail-plate-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fafafa;
+}
+
+.vdetail-plate-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+}
+
+.vdetail-specs {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-top: 16px;
+}
+
+.vdetail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.vdetail-row:last-child { border-bottom: none; }
+
+.vdetail-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+}
+
+.vdetail-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
 }
 
 /* ================= MODALS & FORMS ================= */

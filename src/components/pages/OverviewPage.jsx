@@ -27,7 +27,7 @@ const Icons = {
 const STATUS_CFG = {
   Pending:   { label: 'Pending',   cls: 'b-pending',  chipBg: '#fef3c7', chipColor: '#92400e', dot: '#f59e0b' },
   Approved:  { label: 'Scheduled', cls: 'b-approved', chipBg: '#dcfce7', chipColor: '#15803d', dot: '#16a34a' },
-  Ongoing:   { label: 'On Trip',   cls: 'b-ongoing',  chipBg: '#dbeafe', chipColor: '#1d4ed8', dot: '#3b82f6' },
+  Ongoing:   { label: 'On Trip',   cls: 'b-ongoing',  chipBg: '#fef3c7', chipColor: '#92400e', dot: '#d97706' },
   Returned:  { label: 'Returned',  cls: 'b-returned', chipBg: '#f1f5f9', chipColor: '#475569', dot: '#94a3b8' },
   Completed: { label: 'Returned',  cls: 'b-returned', chipBg: '#f1f5f9', chipColor: '#475569', dot: '#94a3b8' },
   Rejected:  { label: 'Rejected',  cls: 'b-out',      chipBg: '#fee2e2', chipColor: '#b91c1c', dot: '#ef4444' },
@@ -124,7 +124,7 @@ function TripRow({ b, mode }) {
   const name = extractName(b);
   const time = mode === 'depart' ? fmtTime(b.start_datetime) : fmtTime(b.end_datetime);
   const Icon = mode === 'depart' ? Icons.ArrowUp : Icons.ArrowDn;
-  const timeColor = mode === 'depart' ? '#15803d' : '#1d4ed8';
+  const timeColor = mode === 'depart' ? '#15803d' : '#d97706';
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '6px 0', borderBottom: '1px dashed #f1f5f9' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '3px', minWidth: '48px', flexShrink: 0, fontWeight: 800, fontSize: '10.5px', color: timeColor, paddingTop: '1px' }}>
@@ -295,14 +295,14 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
 
         {/* Available Vehicles */}
         <div className="admin-card" onClick={() => goTo('vehicles')} onMouseEnter={hoverIn} onMouseLeave={hoverOut}
-          style={{ margin: 0, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '12px', borderLeft: '4px solid #10b981', cursor: 'pointer', transition: 'transform 0.15s, box-shadow 0.15s' }}>
-          <div style={{ width: 40, height: 40, borderRadius: '10px', backgroundColor: '#ecfdf5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icons.Car /></div>
+          style={{ margin: 0, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '12px', borderLeft: '4px solid #006205', cursor: 'pointer', transition: 'transform 0.15s, box-shadow 0.15s' }}>
+          <div style={{ width: 40, height: 40, borderRadius: '10px', backgroundColor: '#dcfce7', color: '#006205', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icons.Car /></div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 700, letterSpacing: '0.05em', fontSize: '9.5px', color: '#64748b', textTransform: 'uppercase' }}>Available Vehicles</div>
             <div style={{ fontSize: '22px', fontWeight: 900, color: '#0f172a', lineHeight: 1.1 }}>
               {availableVehicles} <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600 }}>/ {vehicles.length}</span>
             </div>
-            <div style={{ fontSize: '10.5px', color: onTripVehicles > 0 ? '#2563eb' : '#94a3b8', fontWeight: 600, marginTop: '1px' }}>
+            <div style={{ fontSize: '10.5px', color: onTripVehicles > 0 ? '#d97706' : '#94a3b8', fontWeight: 600, marginTop: '1px' }}>
               {onTripVehicles > 0 ? `${onTripVehicles} currently on trip` : 'All available'}
             </div>
           </div>
@@ -310,23 +310,23 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
 
         {/* Available Drivers */}
         <div className="admin-card" onClick={() => goTo('drivers')} onMouseEnter={hoverIn} onMouseLeave={hoverOut}
-          style={{ margin: 0, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '12px', borderLeft: '4px solid #3b82f6', cursor: 'pointer', transition: 'transform 0.15s, box-shadow 0.15s' }}>
-          <div style={{ width: 40, height: 40, borderRadius: '10px', backgroundColor: '#eff6ff', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icons.User /></div>
+          style={{ margin: 0, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '12px', borderLeft: '4px solid #006205', cursor: 'pointer', transition: 'transform 0.15s, box-shadow 0.15s' }}>
+          <div style={{ width: 40, height: 40, borderRadius: '10px', backgroundColor: '#dcfce7', color: '#006205', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icons.User /></div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 700, letterSpacing: '0.05em', fontSize: '9.5px', color: '#64748b', textTransform: 'uppercase' }}>Available Drivers</div>
             <div style={{ fontSize: '22px', fontWeight: 900, color: '#0f172a', lineHeight: 1.1 }}>
               {availableDrivers} <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600 }}>/ {drivers.length}</span>
             </div>
-            <div style={{ fontSize: '10.5px', color: onTripDrivers > 0 ? '#2563eb' : '#94a3b8', fontWeight: 600, marginTop: '1px' }}>
+            <div style={{ fontSize: '10.5px', color: onTripDrivers > 0 ? '#d97706' : '#94a3b8', fontWeight: 600, marginTop: '1px' }}>
               {onTripDrivers > 0 ? `${onTripDrivers} on trip` : 'All available'}
             </div>
           </div>
         </div>
 
         {/* This month's completed trips */}
-        <div className="admin-card" onClick={() => goTo('bookings')} onMouseEnter={hoverIn} onMouseLeave={hoverOut}
-          style={{ margin: 0, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '12px', borderLeft: '4px solid #8b5cf6', cursor: 'pointer', transition: 'transform 0.15s, box-shadow 0.15s' }}>
-          <div style={{ width: 40, height: 40, borderRadius: '10px', backgroundColor: '#f5f3ff', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icons.Check /></div>
+        <div className="admin-card" onClick={() => goTo({ tab: 'bookings', filter: 'completed' })} onMouseEnter={hoverIn} onMouseLeave={hoverOut}
+          style={{ margin: 0, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '12px', borderLeft: '4px solid #94a3b8', cursor: 'pointer', transition: 'transform 0.15s, box-shadow 0.15s' }}>
+          <div style={{ width: 40, height: 40, borderRadius: '10px', backgroundColor: '#f1f5f9', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icons.Check /></div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 700, letterSpacing: '0.05em', fontSize: '9.5px', color: '#64748b', textTransform: 'uppercase' }}>Completed Trips</div>
             <div style={{ fontSize: '22px', fontWeight: 900, color: '#0f172a', lineHeight: 1.1 }}>{thisMonthCompleted}</div>
@@ -370,20 +370,20 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
 
       {/* ── 2. CURRENTLY ACTIVE STRIP ── */}
       {activeTrips.length > 0 && (
-        <div onClick={() => goTo('fleets')} style={{ flexShrink: 0, display: 'flex', alignItems: 'center', background: 'linear-gradient(90deg, #1e3a5f 0%, #1e40af 100%)', borderRadius: '10px', overflow: 'hidden', cursor: 'pointer', border: '1px solid #1d4ed8', boxShadow: '0 1px 6px rgba(29,78,216,0.18)' }}>
+        <div onClick={() => goTo('fleets')} style={{ flexShrink: 0, display: 'flex', alignItems: 'center', background: 'linear-gradient(90deg, #004a1f 0%, #006205 100%)', borderRadius: '10px', overflow: 'hidden', cursor: 'pointer', border: '1px solid #006205', boxShadow: '0 1px 6px rgba(0,98,5,0.22)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '7px 14px', background: 'rgba(0,0,0,0.18)', flexShrink: 0, borderRight: '1px solid rgba(255,255,255,0.1)' }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#34d399', boxShadow: '0 0 6px #34d399', animation: 'ovPulse 1.6s ease-in-out infinite', display: 'inline-block' }} />
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#fdd117', boxShadow: '0 0 6px #fdd117', animation: 'ovPulse 1.6s ease-in-out infinite', display: 'inline-block' }} />
             <span style={{ fontSize: '10.5px', fontWeight: 800, color: '#ffffff', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>{activeTrips.length} ON THE ROAD</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 14px', overflowX: 'auto', scrollbarWidth: 'none' }}>
             {activeTrips.map(b => (
               <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '20px', padding: '3px 10px 3px 8px', border: '1px solid rgba(255,255,255,0.15)', flexShrink: 0 }}>
                 <Icons.Road />
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#e0f2fe', whiteSpace: 'nowrap' }}>{b.vehicle?.name || 'Vehicle'}</span>
-                {b.driver?.name && <span style={{ fontSize: '10.5px', color: '#93c5fd', whiteSpace: 'nowrap' }}>· {b.driver.name}</span>}
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#f0fdf4', whiteSpace: 'nowrap' }}>{b.vehicle?.name || 'Vehicle'}</span>
+                {b.driver?.name && <span style={{ fontSize: '10.5px', color: '#bbf7d0', whiteSpace: 'nowrap' }}>· {b.driver.name}</span>}
                 {b.destination && <>
                   <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px' }}>→</span>
-                  <span style={{ fontSize: '10.5px', color: '#bfdbfe', maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.destination}</span>
+                  <span style={{ fontSize: '10.5px', color: '#dcfce7', maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.destination}</span>
                 </>}
               </div>
             ))}
@@ -416,14 +416,14 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
             </div>
 
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-              {[{ label: 'Pending', color: '#f59e0b' }, { label: 'Scheduled', color: '#16a34a' }, { label: 'On Trip', color: '#3b82f6' }, { label: 'Returned', color: '#94a3b8' }]
+              {[{ label: 'Pending', color: '#f59e0b' }, { label: 'Scheduled', color: '#16a34a' }, { label: 'On Trip', color: '#d97706' }, { label: 'Returned', color: '#94a3b8' }]
                 .map(({ label, color }) => (
                   <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', fontWeight: 700, color: '#64748b' }}>
                     <div style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: color }} />{label}
                   </div>
                 ))}
               {selectedDay && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '10px', color: '#2563eb', fontWeight: 700, borderLeft: '1px solid #e2e8f0', paddingLeft: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '10px', color: '#006205', fontWeight: 700, borderLeft: '1px solid #e2e8f0', paddingLeft: '10px' }}>
                   <Icons.Cal />
                   {new Date(selectedDay.year, selectedDay.month, selectedDay.day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} selected
                   <button onClick={() => setSelectedDay(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 1px', color: '#94a3b8', display: 'flex', alignItems: 'center' }}><Icons.X /></button>
@@ -467,11 +467,10 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
                 let bg = '#ffffff', border = '1px solid #e8edf5', numColor = '#334155', numWeight = 600;
                 if (isToday && isSelected)       { bg = '#ecfdf5'; border = '2px solid #006205'; }
                 else if (isToday)                { bg = '#f0fdf4'; border = '2px solid #006205'; }
-                else if (isSelected)             { bg = '#eff6ff'; border = '2px solid #3b82f6'; }
+                else if (isSelected)             { bg = '#f0fdf4'; border = '2px solid #006205'; }
                 else if (hasOverdue)             { bg = '#fff7f7'; border = '1px solid #fca5a5'; }
-                else if (total > 0)              { bg = '#fafcff'; border = '1px solid #dde5f5'; }
-                if (isToday)                     { numColor = '#006205'; numWeight = 900; }
-                else if (isSelected)             { numColor = '#2563eb'; numWeight = 800; }
+                else if (total > 0)              { bg = '#fafcff'; border = '1px solid #d1fae5'; }
+                if (isToday || isSelected)       { numColor = '#006205'; numWeight = 900; }
                 else if (total > 0)              { numWeight = 700; }
 
                 const tooltip = total > 0
@@ -487,7 +486,7 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <span style={{ fontSize: '11.5px', fontWeight: numWeight, color: numColor, lineHeight: 1 }}>{dayNum}</span>
                       {total > 0 && (
-                        <span style={{ fontSize: '8px', fontWeight: 800, lineHeight: '1', color: isToday ? '#006205' : isSelected ? '#2563eb' : hasOverdue ? '#b91c1c' : '#64748b', background: isToday ? '#dcfce7' : isSelected ? '#dbeafe' : hasOverdue ? '#fee2e2' : '#f1f5f9', borderRadius: '10px', padding: '1px 4px' }}>
+                        <span style={{ fontSize: '8px', fontWeight: 800, lineHeight: '1', color: (isToday || isSelected) ? '#006205' : hasOverdue ? '#b91c1c' : '#64748b', background: (isToday || isSelected) ? '#dcfce7' : hasOverdue ? '#fee2e2' : '#f1f5f9', borderRadius: '10px', padding: '1px 4px' }}>
                           {total}
                         </span>
                       )}
@@ -559,7 +558,7 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
                       </div>
                     )}
                     <DaySection title="Scheduled"  items={approvedBks} accentColor="#15803d" />
-                    <DaySection title="On Trip"    items={ongoingBks}  accentColor="#1d4ed8" />
+                    <DaySection title="On Trip"    items={ongoingBks}  accentColor="#d97706" />
                     <DaySection title="Returned"   items={returnedBks} accentColor="#475569" />
                     {!selIsToday && pendingBks.length > 0 && <DaySection title="Pending" items={pendingBks} accentColor="#92400e" />}
                   </>
@@ -632,7 +631,7 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
                       )}
                       {todayReturns.length > 0 && (
                         <div>
-                          <div style={{ fontSize: '9.5px', fontWeight: 800, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <div style={{ fontSize: '9.5px', fontWeight: 800, color: '#d97706', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <Icons.ArrowDn /> Returns Due ({todayReturns.length})
                           </div>
                           {todayReturns.map(b => <TripRow key={b.id} b={b} mode="return" />)}
@@ -652,7 +651,7 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
                   {[
                     { label: 'Pending Approvals', sub: 'Awaiting review',   count: stats.pendingBookings || 0, bg: '#fffbeb', border: '#fde68a', color: '#92400e', num: '#d97706', tab: 'bookings' },
                     { label: 'Scheduled Trips',   sub: 'Ready for dispatch', count: upcomingTrips,             bg: '#f0fdf4', border: '#bbf7d0', color: '#166534', num: '#16a34a', tab: 'fleets'   },
-                    { label: 'Ongoing Trips',     sub: 'On the road',        count: stats.ongoingBookings || 0, bg: '#eff6ff', border: '#bfdbfe', color: '#1e40af', num: '#3b82f6', tab: 'fleets'   },
+                    { label: 'Ongoing Trips',     sub: 'On the road',        count: stats.ongoingBookings || 0, bg: '#fffbeb', border: '#fde68a', color: '#92400e', num: '#d97706', tab: 'fleets'   },
                   ].map(({ label, sub, count, bg, border, color, num, tab }) => (
                     <div key={label} onClick={() => goTo(tab)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', backgroundColor: bg, border: `1px solid ${border}`, borderRadius: '8px', cursor: 'pointer' }}>
                       <div>
@@ -670,7 +669,7 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
                 <div style={{ padding: '8px 12px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <span style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a' }}>Financial Summary</span>
-                    <span style={{ marginLeft: '7px', fontSize: '10px', fontWeight: 700, color: '#2563eb', background: '#dbeafe', border: '1px solid #bfdbfe', borderRadius: '20px', padding: '1px 7px' }}>
+                    <span style={{ marginLeft: '7px', fontSize: '10px', fontWeight: 700, color: '#475569', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '20px', padding: '1px 7px' }}>
                       {MONTHS[realNow.getMonth()]} {realNow.getFullYear()}
                     </span>
                   </div>
@@ -685,17 +684,17 @@ export default function OverviewPage({ stats = {}, bookings = [], vehicles = [],
                   {/* Visual breakdown bar */}
                   {finances.total > 0 && (
                     <div style={{ display: 'flex', height: '5px', borderRadius: '3px', overflow: 'hidden', gap: '1px', marginBottom: '8px' }}>
-                      {finances.fuel   > 0 && <div style={{ flex: finances.fuel,   background: '#3b82f6', transition: 'flex 0.4s' }} />}
-                      {finances.maint  > 0 && <div style={{ flex: finances.maint,  background: '#f59e0b', transition: 'flex 0.4s' }} />}
-                      {finances.repair > 0 && <div style={{ flex: finances.repair, background: '#ef4444', transition: 'flex 0.4s' }} />}
+                      {finances.fuel   > 0 && <div style={{ flex: finances.fuel,   background: '#006205', transition: 'flex 0.4s' }} />}
+                      {finances.maint  > 0 && <div style={{ flex: finances.maint,  background: '#d97706', transition: 'flex 0.4s' }} />}
+                      {finances.repair > 0 && <div style={{ flex: finances.repair, background: '#dc2626', transition: 'flex 0.4s' }} />}
                     </div>
                   )}
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                     {[
-                      { label: 'Fuel',        value: finances.fuel,   color: '#1e40af', dot: '#3b82f6' },
-                      { label: 'Maintenance', value: finances.maint,  color: '#854d0e', dot: '#f59e0b' },
-                      { label: 'Repairs',     value: finances.repair, color: '#991b1b', dot: '#ef4444' },
+                      { label: 'Fuel',        value: finances.fuel,   color: '#166534', dot: '#006205' },
+                      { label: 'Maintenance', value: finances.maint,  color: '#854d0e', dot: '#d97706' },
+                      { label: 'Repairs',     value: finances.repair, color: '#991b1b', dot: '#dc2626' },
                     ].map(({ label, value, color, dot }) => (
                       <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', fontWeight: 700 }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#475569' }}>
