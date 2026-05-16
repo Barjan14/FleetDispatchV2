@@ -325,7 +325,7 @@ The UI enforces a strict semantic color palette applied consistently across all 
 | **Rehana Nicole Ruilan** | Frontend Developer | [@BadGalRiirii](https://github.com/BadGalRiirii) |
 | **Faith Grace Gutierrez** | QA & Documentation | [@faithgrace7](https://github.com/faithgrace7) |
 
-*Internship Capstone Project · DAR Region 10 · Cagayan de Oro City, Philippines*
+*Internship Project · DAR Region 10 · Cagayan de Oro City, Philippines*
 
 </div>
 
