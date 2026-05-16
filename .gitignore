@@ -24,3 +24,10 @@ dist-ssr
 *.sw?
 .env
 .env.example
+
+# Pitch deck & generated files
+*.pptx
+*.ppt
+*.pptm
+generate_pitch.py
+build_pitch.py

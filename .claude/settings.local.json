@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install *)",
+      "Bash(python generate_pitch.py)",
+      "Bash(Remove-Item \"c:\\\\Users\\\\Rehana\\\\Desktop\\\\FleetDispatchV2\\\\FleetDispatch_Pitch.pptx\" -Force)",
+      "Bash(Remove-Item \"c:\\\\Users\\\\Rehana\\\\Desktop\\\\FleetDispatchV2\\\\generate_pitch.py\" -Force)",
+      "Bash(Write-Output \"Done\")",
+      "Bash(python build_pitch.py)"
+    ]
+  }
+}
