@@ -27,8 +27,6 @@ export async function logBookingStatusChange(
       status: newStatus,
       start_datetime: booking?.start_datetime || new Date().toISOString(),
       end_datetime: booking?.end_datetime || null,
-      odometer_start: null,
-      odometer_end: null,
       created_at: new Date().toISOString(),
     };
 

@@ -42,7 +42,7 @@ const DEVS = [
   },
   {
     name: 'Shun Cyrel Caseres',
-    role: 'Frontend Developer',
+    role: 'Backend Developer',
     desc: 'Built the employee-facing booking request form, developed the Drivers page with full Supabase data integration, wired the Gmail-powered email notification system, contributed to system architecture, and participated in end-to-end testing and bug triaging throughout the project.',
     img: '/assets/images/SHUN.jpg',
     initials: 'S',
@@ -94,53 +94,79 @@ const FEATURES = [
 const STEPS = [
   {
     icon: 'clipboard',
+    role: 'employee',
     title: 'Submit a Vehicle Request',
-    desc: 'Employees access the public Request Form from the main landing page — no login or account required. Fill in: your full name, department, destination, purpose of trip, estimated number of passengers, and preferred departure and return date/time. A confirmation message appears on successful submission.',
+    desc: 'Go to the Fleet Dispatch website and click the Request Form button on the main page — no account or password is needed. Fill in your full name, department, destination, reason for the trip, number of passengers, and your preferred departure and return date and time. When finished, click Submit. A confirmation message will appear on screen to confirm that your request was received.',
+    note: 'No account or password needed — the Request Form is open to everyone directly from the main page.',
   },
   {
     icon: 'checkCircle',
+    role: 'admin',
     title: 'Admin Reviews Pending Requests',
-    desc: 'Admins log in through the Admin Login portal using their credentials. New requests surface immediately on the Bookings page under "Pending" status, sorted by submission date. Click any booking row to open the full detail view — including the requester\'s purpose, email, department, and passenger count.',
+    desc: 'Log in to the Admin Portal using the Admin Login button on the main page, then enter your username and password. Once inside, go to the Bookings page and look under the Pending tab — new requests from employees appear there automatically. Click on any request to read the full details: the employee\'s name, department, destination, purpose, and number of passengers.',
+    note: 'New requests appear automatically — you do not need to refresh the page.',
   },
   {
     icon: 'key',
-    title: 'Assign a Vehicle & Driver',
-    desc: 'Before approving, the admin selects an available vehicle and driver from dropdown menus directly in the booking row. Only vehicles currently marked as available and drivers with "Available" status are shown. Both a vehicle and a driver must be assigned before the Approve button activates.',
+    role: 'admin',
+    title: 'Assign a Vehicle and Driver',
+    desc: 'While viewing the booking you just opened, use the two dropdown menus to select a vehicle and a driver. The dropdowns will only show vehicles and drivers that are currently free — you do not need to check other pages. You must choose both a vehicle and a driver before the Approve button becomes available to click.',
+    note: 'The Approve button stays grayed out until both a vehicle and a driver have been selected.',
   },
   {
     icon: 'checkCircle',
+    role: 'admin',
     title: 'Approve or Reject the Booking',
-    desc: 'One-click approval instantly marks the assigned vehicle as "On Duty" and the driver as "On Trip," then fires an automated email to the requester with full trip details — vehicle name, driver, destination, and departure time. Rejecting a request also sends an email notification to the requester.',
+    desc: 'Click Approve to confirm the trip. The system will automatically mark the chosen vehicle as On Duty and the driver as On Trip, then send an email to the employee with all trip details — vehicle name, driver name, destination, and departure time. If the request cannot be accommodated, click Reject — the employee will also receive an email letting them know.',
+    note: 'Both Approve and Reject send an email to the employee automatically — no separate step needed.',
   },
   {
     icon: 'truck',
-    title: 'Monitor & Dispatch from the Fleets Page',
-    desc: 'The Fleets page shows all approved and ongoing bookings in real time. When the vehicle departs, the admin marks the booking as "Ongoing." When it returns, mark it as "Returned" — this automatically resets the vehicle to Available and the driver back to Available status.',
+    role: 'admin',
+    title: 'Monitor and Dispatch from the Fleets Page',
+    desc: 'Open the Fleets page to see all approved and active trips in one place. When the vehicle departs, find that booking in the list and click Mark as Ongoing. When the vehicle returns, click Mark as Returned. The system will automatically set the vehicle back to Available and free up the driver — no extra steps needed.',
+    note: 'Clicking Mark as Returned resets both the vehicle and the driver back to Available automatically.',
   },
   {
     icon: 'monitor',
+    role: 'admin',
     title: 'Manage Vehicles',
-    desc: 'The Vehicles page lists all fleet units with color-coded status headers (green = available, amber = on duty, gray = under repair, red = out of service), license plate, and fuel type. Admins can add new vehicles, edit condition and odometer readings, or remove decommissioned units.',
+    desc: 'The Vehicles page shows every vehicle in the fleet as a card. Each card has a colored header that tells you the current status at a glance. Each card also shows the license plate, fuel type, and condition rating. Click Edit on any card to update the vehicle\'s condition. Use the Add Vehicle button at the top right to register a new vehicle.',
+    note: 'Click any vehicle card to open the full detail sheet with the complete vehicle history.',
+    legend: [
+      { color: '#006205', status: 'Bright Green — Available', desc: 'Ready to be assigned to a trip' },
+      { color: '#1e5a3a', status: 'Dark Green — On Duty',    desc: 'Currently out on a trip' },
+      { color: '#64748b', status: 'Gray — Under Repair',     desc: 'Temporarily out of rotation' },
+      { color: '#dc2626', status: 'Red — Out of Service',    desc: 'Decommissioned or unsafe to use' },
+    ],
   },
   {
     icon: 'users',
+    role: 'admin',
     title: 'Manage Driver Profiles',
-    desc: 'The Drivers page tracks all driver profiles with license number, license type (A/B/C/BE/CE), expiry date with color-coded warnings (red = expired, yellow = expiring within 60 days), current availability status, and assigned vehicle. Filter by status to quickly find available drivers.',
+    desc: 'The Drivers page shows a list of all drivers along with their license number, license type, expiry date, and current availability. Use the status filter at the top of the page to quickly find drivers that are Available. Click Edit on any driver card to update their information.',
+    note: 'Watch the license expiry colors: red means already expired, yellow means it expires within the next 60 days.',
   },
   {
     icon: 'barChart',
+    role: 'admin',
     title: 'Track Expenses with Financial Data',
-    desc: 'The Financial Data page lets admins log and review monthly expenses across three categories: Fuel Records (vehicle, date, liters, cost), Maintenance Costs (type, amount, date), and Repair Records (issue, cost, date reported). Charts and summary tables give management a real-time financial pulse on the entire fleet.',
+    desc: 'The Financial Data page is where you log and review fleet expenses. It has three sections: Fuel Records — log each refueling by selecting the vehicle, date, liters filled, and total cost; Maintenance Costs — record scheduled service expenses; and Repair Records — record any repair work with a description and cost. Charts at the top of the page update automatically as you add entries, giving you a clear monthly view of spending.',
+    note: 'The charts update automatically each time you add a new record — no manual refresh needed.',
   },
   {
     icon: 'fileText',
-    title: 'Audit Every Change with Logs',
-    desc: 'Every vehicle modification and trip event is automatically recorded in the Logs page — capturing exactly who changed what and when. Vehicle change logs track edits to condition, availability, and odometer. Trip logs record departure, return, and assignment events. The full history is available for compliance and dispute resolution.',
+    role: 'admin',
+    title: 'Review the System Logs',
+    desc: 'The Logs page keeps an automatic record of everything that happens in the system — you do not need to do anything to activate it. Every time a vehicle is edited, a trip is started, or a booking is updated, a new entry is created. You can scroll through the full history or use the date filter to find a specific event. This page is useful for checking when something happened or confirming who made a change.',
+    note: 'Logs are recorded automatically. Nothing gets deleted — the full history is always there.',
   },
   {
     icon: 'grid',
-    title: 'Command from the Overview Dashboard',
-    desc: 'The Overview page is the admin\'s command center: live stat cards for vehicles, drivers, completed trips, and vehicle conditions; an interactive booking calendar that shows trip density per day; today\'s scheduled departures and expected returns; active "On the Road" trip strip; overdue vehicle alerts; and a monthly financial snapshot — all updated in real time.',
+    role: 'admin',
+    title: 'Use the Overview Dashboard',
+    desc: 'The Overview page is the first thing you see after logging in, and it gives you a summary of everything at a glance. It shows how many vehicles are available, how many drivers are active, and how many trips have been completed this month. There is also a calendar showing which days have scheduled trips, a list of today\'s departures and expected returns, any overdue vehicle alerts, and a financial snapshot for the current month. Everything on this page updates automatically — no need to refresh.',
+    note: 'Start here every morning — the Overview shows you everything important in one place.',
   },
 ];
 
@@ -238,25 +264,64 @@ const FeatureCard = ({ f, index }) => {
 };
 
 /* ── Step Card ────────────────────────────────────────────── */
+const ROLE_STYLE = {
+  employee: { bg: 'rgba(96,165,250,0.12)', border: 'rgba(96,165,250,0.28)', color: '#93c5fd', label: 'Employee' },
+  admin:    { bg: 'rgba(255,190,38,0.1)',  border: 'rgba(255,190,38,0.26)',  color: '#FFBE26', label: 'Admin'    },
+};
+
 const StepCard = ({ step, index, total }) => {
   const [ref, visible] = useReveal();
+  const rs = step.role ? ROLE_STYLE[step.role] : null;
+
   return (
-    <div
-      ref={ref}
-      className={`am-step ${visible ? 'am-revealed' : ''}`}
-      style={{ '--i': index }}
-    >
-      <div className="am-step-left">
-        <div className="am-step-bubble">
-          <Icon name={step.icon} size={20} />
+    <div className="am-step-wrap" ref={ref} style={{ '--i': index }}>
+      <div className={`am-step-card ${visible ? 'am-revealed' : ''}`}>
+
+        {/* Header */}
+        <div className="am-step-card-head">
+          <div className="am-step-bubble">
+            <Icon name={step.icon} size={24} />
+          </div>
+          <div className="am-step-head-info">
+            <span className="am-step-num">Step {String(index + 1).padStart(2, '0')}</span>
+            <h3 className="am-step-title">{step.title}</h3>
+          </div>
+          {rs && (
+            <span className="am-step-role" style={{ background: rs.bg, borderColor: rs.border, color: rs.color }}>
+              {rs.label}
+            </span>
+          )}
         </div>
-        {index < total - 1 && <div className="am-step-line" />}
+
+        {/* Body */}
+        <div className="am-step-card-body">
+          <p className="am-step-desc">{step.desc}</p>
+
+          {step.note && (
+            <div className="am-step-note">
+              <span className="am-step-note-icon" aria-hidden="true">💡</span>
+              <span>{step.note}</span>
+            </div>
+          )}
+
+          {step.legend && (
+            <div className="am-step-legend">
+              <span className="am-step-legend-title">Card Color Guide</span>
+              {step.legend.map((item, i) => (
+                <div key={i} className="am-legend-item">
+                  <span className="am-legend-swatch" style={{ background: item.color }} />
+                  <span className="am-legend-text">
+                    <strong>{item.status}</strong>
+                    <span className="am-legend-sub">{item.desc}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
       </div>
-      <div className="am-step-body">
-        <span className="am-step-num">Step {String(index + 1).padStart(2, '0')}</span>
-        <h3 className="am-step-title">{step.title}</h3>
-        <p className="am-step-desc">{step.desc}</p>
-      </div>
+      {index < total - 1 && <div className="am-step-connector" />}
     </div>
   );
 };
@@ -489,8 +554,9 @@ const AboutModal = ({ onClose }) => {
               <span className="am-eyebrow">User Manual</span>
               <h2 className="am-heading">How It Works</h2>
               <p className="am-lead">
-                A complete step-by-step walkthrough of the system — from submitting a vehicle request
-                to monitoring finances and auditing every change.
+                A plain-language, step-by-step guide to everything in the system —
+                from requesting a vehicle to approving trips, managing the fleet, and reviewing expenses.
+                Follow the steps in order for your first time, or jump to any step you need.
               </p>
             </div>
             <div className="am-steps-list">

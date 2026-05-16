@@ -9,8 +9,6 @@ const TripLogFormModal = ({ trip, vehicles, onSave, onClose }) => {
     status: 'Scheduled',
     start_datetime: '',
     end_datetime: '',
-    odometer_start: '',
-    odometer_end: ''
   });
 
   useEffect(() => {
@@ -130,30 +128,6 @@ const TripLogFormModal = ({ trip, vehicles, onSave, onClose }) => {
                 name="end_datetime"
                 value={formData.end_datetime}
                 onChange={handleChange}
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label>Odometer Start (km)</label>
-              <input
-                type="number"
-                name="odometer_start"
-                value={formData.odometer_start}
-                onChange={handleChange}
-                step="0.1"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Odometer End (km)</label>
-              <input
-                type="number"
-                name="odometer_end"
-                value={formData.odometer_end}
-                onChange={handleChange}
-                step="0.1"
               />
             </div>
           </div>

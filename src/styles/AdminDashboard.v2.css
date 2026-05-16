@@ -951,7 +951,7 @@
 }
 
 .vcard-available { background: linear-gradient(135deg, #006205 0%, #004a1f 100%); }
-.vcard-duty      { background: linear-gradient(135deg, #d97706 0%, #b45309 100%); }
+.vcard-duty      { background: linear-gradient(135deg, #1e5a3a 0%, #0f3d28 100%); }
 .vcard-repair    { background: linear-gradient(135deg, #64748b 0%, #475569 100%); }
 .vcard-out       { background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); }
 

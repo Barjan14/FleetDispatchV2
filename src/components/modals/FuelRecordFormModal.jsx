@@ -8,7 +8,6 @@ const FuelRecordFormModal = ({ record, vehicles, onSave, onClose }) => {
     liters: '',
     cost_per_liter: '',
     total_cost: '',
-    odometer_km: '',
     km_per_liter: '',
     station_name: '',
     notes: '',
@@ -137,18 +136,6 @@ const FuelRecordFormModal = ({ record, vehicles, onSave, onClose }) => {
           </div>
 
           <div className="form-row">
-            <div className="form-group">
-              <label>Odometer (km)</label>
-              <input
-                type="number"
-                name="odometer_km"
-                value={formData.odometer_km}
-                onChange={handleChange}
-                placeholder="0.00"
-                step="0.1"
-              />
-            </div>
-
             <div className="form-group">
               <label>Efficiency (km/L)</label>
               <input

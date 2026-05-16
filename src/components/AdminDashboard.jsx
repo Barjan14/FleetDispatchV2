@@ -143,7 +143,7 @@ export default function AdminDashboard() {
 
   const [vForm, setVForm] = useState({
     name: '', plate_number: '', model: '', year: '',
-    fuel_type: 'Diesel', condition: 'Good', odometer_km: 0,
+    fuel_type: 'Diesel', condition: 'Good',
     is_available: true, fleet_id: '', image_url: '',
   });
 
@@ -315,7 +315,7 @@ export default function AdminDashboard() {
   const openAddVehicle = () => {
     setVForm({
       name: '', plate_number: '', model: '', year: '',
-      fuel_type: 'Diesel', condition: 'Good', odometer_km: 0,
+      fuel_type: 'Diesel', condition: 'Good',
       is_available: true, fleet_id: '', image_url: '',
     });
     setModalType('addVehicle');
@@ -336,7 +336,6 @@ export default function AdminDashboard() {
       year:         vForm.year ? parseInt(vForm.year) : null,
       fuel_type:    vForm.fuel_type,
       condition:    vForm.condition,
-      odometer_km:  parseFloat(vForm.odometer_km) || 0,
       is_available: vForm.is_available !== false,
       fleet_id:     vForm.fleet_id || null,
       image_url:    vForm.image_url,

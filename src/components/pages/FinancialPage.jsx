@@ -341,7 +341,7 @@ function FuelTab({ vehicles, refreshKey }) {
   const [toast, setToast]     = useState('');
   const [form, setForm]       = useState({
     vehicle_id: '', date: '', liters: '', cost_per_liter: '',
-    total_cost: '', odometer_km: '', station_name: '', notes: '',
+    total_cost: '', station_name: '', notes: '',
   });
 
   const load = useCallback(async () => {
@@ -363,16 +363,16 @@ function FuelTab({ vehicles, refreshKey }) {
     const data = records.map(r => ({
       'Date': fmtD(r.date), 'Vehicle': r.vehicles?.name || 'N/A', 'Plate': r.vehicles?.plate_number || 'N/A',
       'Liters': Number(r.liters || 0).toFixed(2), 'Cost/L': `PHP ${r.cost_per_liter}`,
-      'Total Cost': `PHP ${r.total_cost}`, 'Odometer': r.odometer_km, 'Station': r.station_name || 'N/A',
+      'Total Cost': `PHP ${r.total_cost}`, 'Station': r.station_name || 'N/A',
     }));
     generateExcel(data, 'Fuel_Records');
   };
 
   const exportPDF = () => {
-    const cols = ['Date', 'Vehicle', 'Liters', 'Cost/L', 'Total Cost', 'Odometer', 'Station'];
+    const cols = ['Date', 'Vehicle', 'Liters', 'Cost/L', 'Total Cost', 'Station'];
     const rows = records.map(r => [
       fmtD(r.date), r.vehicles?.name || 'N/A', `${Number(r.liters || 0).toFixed(2)} L`,
-      fmt(r.cost_per_liter), fmt(r.total_cost), r.odometer_km || '—', r.station_name || '—',
+      fmt(r.cost_per_liter), fmt(r.total_cost), r.station_name || '—',
     ]);
     generatePDF('Fuel Cost Records', cols, rows, 'Fuel_Records');
   };
@@ -385,7 +385,6 @@ function FuelTab({ vehicles, refreshKey }) {
     const { error } = await supabase.from('fuel_records').insert({
       vehicle_id: parseInt(form.vehicle_id), date: form.date, liters, cost_per_liter: cpp,
       total_cost: form.total_cost ? parseFloat(form.total_cost) : liters * cpp,
-      odometer_km: form.odometer_km ? parseFloat(form.odometer_km) : null,
       station_name: form.station_name, notes: form.notes,
     });
     if (error) { showToast('Error: ' + error.message); return; }
@@ -424,7 +423,7 @@ function FuelTab({ vehicles, refreshKey }) {
           <div className="fin-card-actions">
             <button className="fin-btn fin-btn-ghost" onClick={exportExcel} style={{ color: '#16a34a', borderColor: '#bbf7d0' }}><Icons.Download /> Excel</button>
             <button className="fin-btn fin-btn-ghost" onClick={exportPDF}   style={{ color: '#dc2626', borderColor: '#fecaca' }}><Icons.Download /> PDF</button>
-            <button className="fin-btn fin-btn-primary" onClick={() => { setForm({ vehicle_id:'',date:'',liters:'',cost_per_liter:'',total_cost:'',odometer_km:'',station_name:'',notes:'' }); setModal(true); }}>+ Add Fuel</button>
+            <button className="fin-btn fin-btn-primary" onClick={() => { setForm({ vehicle_id:'',date:'',liters:'',cost_per_liter:'',total_cost:'',station_name:'',notes:'' }); setModal(true); }}>+ Add Fuel</button>
           </div>
         </div>
 
@@ -433,12 +432,12 @@ function FuelTab({ vehicles, refreshKey }) {
             <thead>
               <tr>
                 <th>Date</th><th>Vehicle</th><th>Liters</th><th>Cost / L</th>
-                <th>Total Cost</th><th>Odometer</th><th>Station</th><th></th>
+                <th>Total Cost</th><th>Station</th><th></th>
               </tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan={8} className="fin-empty">Loading…</td></tr>}
-              {!loading && records.length === 0 && <tr><td colSpan={8} className="fin-empty">No fuel records yet.</td></tr>}
+              {loading && <tr><td colSpan={7} className="fin-empty">Loading…</td></tr>}
+              {!loading && records.length === 0 && <tr><td colSpan={7} className="fin-empty">No fuel records yet.</td></tr>}
               {records.map(r => (
                 <tr key={r.id}>
                   <td>{fmtD(r.date)}</td>
@@ -449,7 +448,6 @@ function FuelTab({ vehicles, refreshKey }) {
                   <td>{Number(r.liters || 0).toFixed(2)} L</td>
                   <td>{fmt(r.cost_per_liter)}</td>
                   <td style={{ fontWeight: 700, color: C.amber }}>{fmt(r.total_cost)}</td>
-                  <td className="fin-cell-muted">{r.odometer_km ? `${Number(r.odometer_km).toLocaleString()} km` : '—'}</td>
                   <td className="fin-cell-muted">{r.station_name || '—'}</td>
                   <td>
                     <button className="fin-btn fin-btn-icon" onClick={() => del(r.id)} title="Delete record">
@@ -494,15 +492,9 @@ function FuelTab({ vehicles, refreshKey }) {
                   <input type="number" step="0.01" placeholder="e.g. 65.00" value={form.cost_per_liter} onChange={e => handleFormChange('cost_per_liter', e.target.value)} />
                 </div>
               </div>
-              <div className="fin-row2">
-                <div className="fin-fg">
-                  <label>Total Cost (₱) — auto-calculated</label>
-                  <input type="number" step="0.01" value={form.total_cost} onChange={e => handleFormChange('total_cost', e.target.value)} />
-                </div>
-                <div className="fin-fg">
-                  <label>Odometer (km)</label>
-                  <input type="number" step="0.1" placeholder="e.g. 12500" value={form.odometer_km} onChange={e => handleFormChange('odometer_km', e.target.value)} />
-                </div>
+              <div className="fin-fg">
+                <label>Total Cost (₱) — auto-calculated</label>
+                <input type="number" step="0.01" value={form.total_cost} onChange={e => handleFormChange('total_cost', e.target.value)} />
               </div>
               <div className="fin-fg">
                 <label>Station Name</label>
@@ -961,8 +953,8 @@ function DepreciationTab({ vehicles, refreshKey }) {
               <tr><th>Vehicle</th><th>Purchase Price</th><th>Purchase Date</th><th>Useful Life</th><th>Residual Value</th><th>Current Value</th><th>Method</th><th></th></tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan={8} className="fin-empty">Loading…</td></tr>}
-              {!loading && records.length === 0 && <tr><td colSpan={8} className="fin-empty">No depreciation records yet.</td></tr>}
+              {loading && <tr><td colSpan={7} className="fin-empty">Loading…</td></tr>}
+              {!loading && records.length === 0 && <tr><td colSpan={7} className="fin-empty">No depreciation records yet.</td></tr>}
               {records.map(r => {
                 const cv  = r.current_value ?? calcCurrentValue(r.purchase_price, r.residual_value, r.useful_life_years, r.purchase_date);
                 const pct = r.purchase_price ? ((cv / r.purchase_price) * 100).toFixed(1) : null;
