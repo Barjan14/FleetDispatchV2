@@ -277,7 +277,7 @@ export default function AdminDashboard() {
         }
       )
       .subscribe((status) => {
-        console.log('Realtime status:', status);
+        if (import.meta.env.DEV) console.log('Realtime status:', status);
       });
 
     return () => {
@@ -403,7 +403,6 @@ export default function AdminDashboard() {
         const assignedVehicle = vehicles.find(v => String(v.id) === String(vehicleId));
         const assignedDriver  = drivers.find(d => String(d.id) === String(driverId));
 
-        console.log(`Triggering ${status} email for:`, booking.email || booking.user?.email);
 
         const { error: funcError } = await supabase.functions.invoke('send-approval-email', {
           body: {
