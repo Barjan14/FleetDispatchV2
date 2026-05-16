@@ -50,14 +50,14 @@
 FleetDispatch V2 replaces paper-based vehicle logbooks with a **centralized, real-time platform** covering the full lifecycle of fleet operations — from employee booking requests to trip completion, fuel cost tracking, driver compliance, and exportable financial reporting.
 
 > **Two portals. One system.**
-> - 🛡️ **Admin Dashboard** — full fleet control, booking approvals, driver and vehicle management, financial records
-> - 👤 **Employee Portal** — submit trip requests, track booking status, browse fleet availability
+> - **Admin Dashboard** — full fleet control, booking approvals, driver and vehicle management, financial records
+> - **Employee Portal** — submit trip requests, track booking status, browse fleet availability
 
 ---
 
 ## Features
 
-### 🛡️ Admin Dashboard
+### Admin Dashboard
 
 <table>
 <tr>
@@ -65,36 +65,36 @@ FleetDispatch V2 replaces paper-based vehicle logbooks with a **centralized, rea
 <th>What it does</th>
 </tr>
 <tr>
-<td><b>📊 Overview</b></td>
+<td><b>Overview</b></td>
 <td>Live KPI cards (total vehicles, active drivers, today's bookings, monthly fuel cost), booking activity feed, color-coded vehicle status grid, overdue trip alerts, and monthly trend chart</td>
 </tr>
 <tr>
-<td><b>🚘 Vehicles</b></td>
+<td><b>Vehicles</b></td>
 <td>Full vehicle registry with status-coded card grid — Available, On Duty, Under Repair, Out of Service. Add, edit, and view details with linked safety checks, insurance, and repair history</td>
 </tr>
 <tr>
-<td><b>👤 Drivers</b></td>
+<td><b>Drivers</b></td>
 <td>Driver profiles with license expiry tracking and automatic color-coded warnings (expires within 60 days or already expired). Status filter: Available · On Trip · On Leave · Off Duty · Suspended</td>
 </tr>
 <tr>
-<td><b>📅 Bookings</b></td>
+<td><b>Bookings</b></td>
 <td>Employee booking inbox — approve or reject, assign vehicle + driver, mark trips as Ongoing and Returned. Full history with search and filters</td>
 </tr>
 <tr>
-<td><b>🏷️ Fleets</b></td>
+<td><b>Fleets</b></td>
 <td>Organize vehicles into named fleet groups for operational assignment</td>
 </tr>
 <tr>
-<td><b>📋 Logs</b></td>
+<td><b>Logs</b></td>
 <td>Immutable audit trail of every vehicle record change — who changed what and when</td>
 </tr>
 <tr>
-<td><b>💰 Financial</b></td>
+<td><b>Financial</b></td>
 <td>Fuel log entry with receipt image upload, filterable cost table, and running totals. One-click export to <b>Excel (.xlsx)</b> or <b>PDF</b></td>
 </tr>
 </table>
 
-### 👤 Employee Portal
+### Employee Portal
 
 <table>
 <tr>
@@ -102,36 +102,36 @@ FleetDispatch V2 replaces paper-based vehicle logbooks with a **centralized, rea
 <th>Description</th>
 </tr>
 <tr>
-<td><b>📝 Booking Form</b></td>
+<td><b>Booking Form</b></td>
 <td>Origin, destination, purpose, departure time (auto-fills to current time), and return date</td>
 </tr>
 <tr>
-<td><b>🔔 Status Tracking</b></td>
+<td><b>Status Tracking</b></td>
 <td>Live booking status: Pending → Approved → Ongoing → Returned / Rejected</td>
 </tr>
 <tr>
-<td><b>🚗 Fleet View</b></td>
+<td><b>Fleet View</b></td>
 <td>Browse which vehicles are currently available before submitting</td>
 </tr>
 <tr>
-<td><b>📧 Email Alerts</b></td>
+<td><b>Email Alerts</b></td>
 <td>Automatic approval and rejection email notifications sent via Supabase Edge Functions</td>
 </tr>
 </table>
 
-### ✨ System-Wide
+### System-Wide
 
-- 🔒 **Role-based access** — admin credentials required for the dashboard; employee portal is publicly accessible
-- 📖 **Built-in User Manual** — interactive step-by-step guide accessible via the Help button at any time
-- 📱 **Browser-based** — no app install required; works on any device
-- 🧾 **Zero-paper workflow** — every step from request to return is fully digital
+- **Role-based access** — admin credentials required for the dashboard; employee portal is publicly accessible
+- **Built-in User Manual** — interactive step-by-step guide accessible via the Help button at any time
+- **Browser-based** — no app install required; works on any device
+- **Zero-paper workflow** — every step from request to return is fully digital
 
 ---
 
 ## Booking Lifecycle
 
 ```
-  👤 Employee submits request
+  Employee submits request
            │
      ┌─────▼─────┐
      │  PENDING  │
@@ -287,25 +287,25 @@ src/
 
 The UI enforces a strict semantic color palette applied consistently across all status indicators:
 
-| Status | Hex | Used For |
+| Color | Hex | Used For |
 |---|---|---|
-| 🟢 Brand Green | `#006205` | Available · Approved · Good condition |
-| 🟩 Forest Green | `#1e5a3a` | On Duty |
-| 🟡 Amber | `#f59e0b` | Pending · Warning |
-| 🔘 Slate | `#64748b` | Under Repair · Completed · Neutral |
-| 🔴 Red | `#dc2626` | Out of Service · Rejected · Expired |
+| Brand Green | `#006205` | Available · Approved · Good condition |
+| Forest Green | `#1e5a3a` | On Duty |
+| Amber | `#f59e0b` | Pending · Warning |
+| Slate | `#64748b` | Under Repair · Completed · Neutral |
+| Red | `#dc2626` | Out of Service · Rejected · Expired |
 
 ---
 
 ## User Roles
 
-### 🛡️ Admin
+### Admin
 - Authenticates at `/admin-login` using Supabase credentials
 - Full access: vehicles, drivers, bookings, fleets, logs, financial data, user management
 - Approves or rejects booking requests and assigns vehicle + driver
 - Marks trips as Ongoing (departure confirmed) and Returned (vehicle back)
 
-### 👤 Employee
+### Employee
 - Accesses the booking portal at `/` — **no account required**
 - Submits vehicle trip requests with origin, destination, purpose, and schedule
 - Receives automated email on approval or rejection
