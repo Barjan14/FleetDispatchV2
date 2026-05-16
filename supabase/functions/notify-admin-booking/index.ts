@@ -18,11 +18,8 @@ serve(async (req: Request) => {
     const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
     const SENDER_EMAIL = Deno.env.get("SENDER_EMAIL");
 
-    // Multiple admin emails
-    const ADMIN_EMAILS = [
-      "dar.regionaloffice.x@gmail.com",
-      "nicolasruilan30@gmail.com",
-    ];
+    // Admin emails loaded from Supabase Edge Function secrets (set via Supabase dashboard)
+    const ADMIN_EMAILS = (Deno.env.get("ADMIN_EMAILS") || "").split(",").map(e => e.trim()).filter(Boolean);
 
     console.log("Processing new booking notification...");
 
@@ -68,8 +65,8 @@ serve(async (req: Request) => {
 
             <br/>
 
-            <a 
-              href="https://darxfleetdispatch.vercel.app/admin-login"
+            <a
+              href="${Deno.env.get("APP_URL") || ""}/admin-login"
               style="
                 background: #1d4ed8;
                 color: white;

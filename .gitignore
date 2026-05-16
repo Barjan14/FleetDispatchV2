@@ -25,6 +25,9 @@ dist-ssr
 .env
 .env.example
 
+# Supabase local temp files (contain connection strings)
+supabase/.temp/
+
 # Pitch deck & generated files
 *.pptx
 *.ppt

@@ -6,7 +6,9 @@
       "Bash(Remove-Item \"c:\\\\Users\\\\Rehana\\\\Desktop\\\\FleetDispatchV2\\\\FleetDispatch_Pitch.pptx\" -Force)",
       "Bash(Remove-Item \"c:\\\\Users\\\\Rehana\\\\Desktop\\\\FleetDispatchV2\\\\generate_pitch.py\" -Force)",
       "Bash(Write-Output \"Done\")",
-      "Bash(python build_pitch.py)"
+      "Bash(python build_pitch.py)",
+      "Bash(git rm *)",
+      "Bash(git check-ignore *)"
     ]
   }
 }

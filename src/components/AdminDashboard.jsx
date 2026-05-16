@@ -38,10 +38,8 @@ const NAV_ICONS = {
   ),
   drivers: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="1" y="3" width="15" height="13" rx="2"/>
-      <path d="M16 8h4l3 3v3h-7V8z"/>
-      <circle cx="5.5" cy="18.5" r="2.5"/>
-      <circle cx="18.5" cy="18.5" r="2.5"/>
+      <circle cx="12" cy="8" r="4"/>
+      <path d="M4 21v-1a8 8 0 0 1 16 0v1"/>
     </svg>
   ),
   bookings: (
@@ -52,9 +50,10 @@ const NAV_ICONS = {
   ),
   fleets: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-      <path d="M2 17l10 5 10-5"/>
-      <path d="M2 12l10 5 10-5"/>
+      <rect x="3" y="3" width="7" height="7" rx="1"/>
+      <rect x="14" y="3" width="7" height="7" rx="1"/>
+      <rect x="3" y="14" width="7" height="7" rx="1"/>
+      <rect x="14" y="14" width="7" height="7" rx="1"/>
     </svg>
   ),
   logs: (
