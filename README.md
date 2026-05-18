@@ -333,7 +333,7 @@ The UI enforces a strict semantic color palette applied consistently across all 
 
 <div align="center">
 
-*© 2025–2026 Penta Quail · University of Science and Technology of the Philippines*
+*© 2026 Penta Quail · University of Science and Technology of the Philippines &*
 *Department of Agrarian Reform — Region 10*
 
 </div>
