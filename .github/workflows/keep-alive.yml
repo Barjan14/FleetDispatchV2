@@ -1,0 +1,19 @@
+name: Prevent Supabase Inactivity
+
+on:
+  schedule:
+    - cron: '0 0 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Insert Request to Supabase
+        run: |
+          curl -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/heartbeat" \
+          -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+          -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}" \
+          -H "Content-Type: application/json" \
+          -H "Prefer: return=minimal" \
+          -d "{\"timestamp\": \"$(date -u +'%Y-%m-%dT%H:%M:%SZ')\"}"
