@@ -808,39 +808,58 @@
 
 /* ── mobile ───────────────────────────────────────────── */
 @media (max-width: 640px) {
+
+  /* ── page shell ────────────────────────────────────── */
   .fd-page {
     padding: 0;
     background-attachment: scroll;
+    /* let the container be the scroll root */
   }
 
+  /* Main container: one scroll zone for everything */
   .fd-container-modern {
     border-radius: 0;
+    /* Fill exactly the visual viewport (no browser chrome overflow) */
     height: 100vh;
+    height: -webkit-fill-available;
     height: 100dvh;
-    min-height: 100vh;
-    min-height: 100dvh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
   }
 
+  /* ── header: compact + sticky so it never disappears ── */
   .fd-header-modern {
-    padding: 0.875rem 1rem;
+    padding: 0.625rem 0.875rem;
+    position: sticky;
+    top: 0;
+    z-index: 20;
   }
 
   .fd-header-info h1 {
-    font-size: 1.2rem;
+    font-size: 1.05rem;
+    letter-spacing: 0.08em;
   }
 
   .fd-date {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
   }
 
   .fd-status-badge {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.7rem;
+    padding: 0.3rem 0.625rem;
+    font-size: 0.65rem;
   }
 
+  .fd-logo {
+    width: 38px;
+    height: 38px;
+  }
+
+  /* ── stepper: compact ──────────────────────────────── */
   .fd-stepper {
-    padding: 0.875rem 1rem;
-    gap: 0.375rem;
+    padding: 0.625rem 0.875rem;
+    gap: 0.25rem;
   }
 
   .fd-step-label {
@@ -848,66 +867,154 @@
   }
 
   .fd-step-line {
-    width: 28px;
-    margin: 0 0.375rem;
+    width: 24px;
+    margin: 0 0.25rem;
   }
 
   .fd-step-circle {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
+    font-size: 0.78rem;
+  }
+
+  /* ── form content: no inner scroll — container scrolls ── */
+  .fd-form-content {
+    overflow: visible;
+    flex: none;
+    padding: 0.875rem 0.875rem 0.5rem;
+  }
+
+  .fd-section-header {
+    margin-bottom: 0.875rem;
+    padding-bottom: 0.625rem;
+  }
+
+  .fd-section-header h2 {
+    font-size: 1rem;
+  }
+
+  .fd-form-grid {
+    gap: 0.75rem;
+  }
+
+  .fd-field {
+    gap: 0.3rem;
+  }
+
+  .fd-field label {
     font-size: 0.8rem;
   }
 
-  .fd-form-content {
-    padding: 1rem;
-  }
-
-  /* prevent iOS zoom on focus */
+  /* prevent iOS auto-zoom on tap */
   .fd-field input,
   .fd-field select,
   .fd-field textarea {
     font-size: 16px;
-    min-height: 48px;
+    min-height: 44px;
+    padding: 0.6rem 0.875rem;
   }
 
+  .fd-field select {
+    padding-right: 2.25rem;
+  }
+
+  .fd-field textarea {
+    min-height: 64px;
+  }
+
+  .fd-fixed-value {
+    padding: 0.6rem 0.875rem;
+    min-height: 44px;
+  }
+
+  /* ── sticky footer: always visible above keyboard ──── */
   .fd-footer-modern {
-    flex-direction: column;
-    gap: 1.5rem;
-    padding: 1.5rem 1rem 1rem 1rem;
-  }
-
-  .fd-footer-actions {
-    width: 100%;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .fd-btn {
-    width: 100%;
-    justify-content: center;
-    min-height: 48px;
+    position: sticky;
+    bottom: 0;
+    z-index: 50;
+    background: rgba(248, 250, 252, 0.97);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    border-top: 1px solid rgba(229, 231, 235, 0.9);
+    flex-direction: row;
+    align-items: center;
+    padding: 0.625rem 0.875rem;
+    padding-bottom: max(0.625rem, env(safe-area-inset-bottom));
+    gap: 0.5rem;
   }
 
   .fd-reset-circle {
-    top: -4.5rem;
-    right: 1rem;
-    width: 3.25rem;
-    height: 3.25rem;
-    font-size: 1.15rem;
+    position: static;
+    width: 2.75rem;
+    height: 2.75rem;
+    font-size: 1.05rem;
+    flex-shrink: 0;
+    order: -1;
+  }
+
+  .fd-footer-actions {
+    flex: 1;
+    flex-direction: row;
+    gap: 0.5rem;
+    justify-content: flex-end;
+  }
+
+  .fd-btn {
+    min-height: 44px;
+    padding: 0.6rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .fd-btn-ghost {
+    padding: 0.6rem 0.75rem;
+  }
+
+  /* ── success banner ────────────────────────────────── */
+  .fd-success-banner {
+    padding: 0.75rem 0.875rem;
+    font-size: 0.85rem;
+  }
+
+  /* ── summary card ──────────────────────────────────── */
+  .fd-summary-card {
+    padding: 0.875rem;
+    min-height: unset;
+  }
+
+  .fd-summary-header {
+    margin-bottom: 0.875rem;
+    padding-bottom: 0.625rem;
+  }
+
+  .fd-summary-grid {
+    gap: 0.625rem;
+    margin-bottom: 0.875rem;
+  }
+
+  .fd-summary-item {
+    padding: 0.625rem;
+  }
+
+  .fd-summary-item.full {
+    grid-column: span 1;
   }
 
   .fd-summary-actions {
-    flex-direction: column;
-    padding: 1rem;
-    gap: 0.75rem;
+    position: sticky;
+    bottom: 0;
+    z-index: 50;
+    background: rgba(255, 255, 255, 0.97);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    flex-direction: row;
+    gap: 0.5rem;
+    padding: 0.625rem 0.875rem;
+    justify-content: stretch;
   }
 
   .fd-summary-actions .fd-btn {
+    flex: 1;
     min-width: unset;
-    width: 100%;
-  }
-
-  .fd-summary-card {
-    padding: 1rem;
+    min-height: 44px;
   }
 }

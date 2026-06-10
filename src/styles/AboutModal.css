@@ -28,7 +28,8 @@
 .am-panel {
   width: 100%;
   max-width: 860px;
-  height: 92vh;
+  height: 92svh;
+  height: 92dvh;
   background: linear-gradient(170deg, #0d1b10 0%, #0a1509 60%, #0c1a0e 100%);
   border-radius: 26px 26px 0 0;
   display: flex;
@@ -789,6 +790,7 @@
 /* ── Footer ───────────────────────────────────────────────── */
 .am-footer {
   padding: 44px 48px 52px;
+  padding-bottom: max(52px, calc(44px + env(safe-area-inset-bottom)));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1091,33 +1093,121 @@
 
 /* ── Responsive ───────────────────────────────────────────── */
 @media (max-width: 700px) {
-  .am-panel { height: 95vh; border-radius: 22px 22px 0 0; }
-  .am-topbar { padding: 10px 14px; }
-  .am-nav { padding: 3px; }
-  .am-nav-btn { padding: 6px 11px; font-size: 0.66rem; gap: 4px; }
+  /* Panel: use dynamic/small viewport to account for browser chrome */
+  .am-panel {
+    height: 94svh;
+    height: 94dvh;
+    border-radius: 22px 22px 0 0;
+  }
+
+  .am-topbar {
+    padding: 8px 12px;
+    gap: 6px;
+  }
+
+  .am-nav { padding: 3px; gap: 3px; }
+  .am-nav-btn { padding: 6px 12px; font-size: 0.66rem; gap: 4px; }
   .am-nav-btn svg { display: none; }
-  .am-hero { padding: 40px 24px 36px; }
+
+  .am-close-btn { right: 12px; width: 30px; height: 30px; }
+
+  /* Hero: much more compact on mobile */
+  .am-hero {
+    padding: 28px 20px 24px;
+  }
+
+  .am-hero-title {
+    font-size: clamp(1.75rem, 7vw, 2.4rem);
+    margin-bottom: 10px;
+  }
+
+  .am-hero-lead {
+    font-size: 0.82rem;
+    line-height: 1.65;
+    margin-bottom: 16px;
+  }
+
+  .am-hero-tag {
+    font-size: 0.64rem;
+    padding: 3px 11px;
+  }
+
   .am-collab { gap: 18px; }
-  .am-collab-logo { height: 56px; }
-  .am-section { padding: 36px 20px 20px; }
-  .am-dev-card { grid-template-columns: 64px 1fr; padding: 16px 44px 16px 18px; }
-  .am-dev-avatar-wrap, .am-dev-avatar, .am-dev-avatar-fallback { width: 56px; height: 56px; }
+  .am-collab-logo { height: 52px; }
+
+  .am-section { padding: 32px 16px 20px; }
+
+  .am-section-head { margin-bottom: 24px; }
+
+  .am-heading { font-size: clamp(1.45rem, 4vw, 1.8rem); margin-bottom: 8px; }
+
+  .am-lead { font-size: 0.88rem; }
+
+  .am-dev-card { grid-template-columns: 60px 1fr; padding: 14px 40px 14px 16px; gap: 0 16px; }
+  .am-dev-avatar-wrap, .am-dev-avatar, .am-dev-avatar-fallback { width: 52px; height: 52px; }
+  .am-dev-name { font-size: 0.88rem; }
+  .am-dev-desc { font-size: 0.74rem; }
+
   .am-features-grid { grid-template-columns: 1fr 1fr; }
-  .am-footer { padding: 36px 24px 44px; }
-  .am-help-btn { bottom: 20px; right: 20px; width: 46px; height: 46px; font-size: 1.2rem; }
+
+  .am-step-card-head { padding: 16px 18px 14px; gap: 12px; }
+  .am-step-card-body { padding: 14px 18px 18px; }
+  .am-step-desc { font-size: 0.9rem; line-height: 1.75; }
+
+  .am-footer { padding: 32px 20px 40px; }
+  .am-help-btn { bottom: 18px; right: 18px; width: 46px; height: 46px; font-size: 1.2rem; }
 }
+
 @media (max-width: 480px) {
-  .am-topbar-logos { gap: 5px; }
-  .am-topbar-logo { height: 24px; }
+  /* Full-screen panel on small phones */
+  .am-panel {
+    height: 100svh;
+    height: 100dvh;
+    border-radius: 20px 20px 0 0;
+  }
+
+  .am-topbar { padding: 7px 10px; }
+  .am-topbar-logos { gap: 4px; }
+  .am-topbar-logo { height: 22px; }
+  .am-nav-btn { padding: 5px 10px; font-size: 0.63rem; }
+
+  /* Hero: minimal padding on tiny screens */
+  .am-hero { padding: 20px 14px 18px; }
+
+  .am-hero-title { font-size: clamp(1.55rem, 8vw, 2rem); margin-bottom: 8px; }
+
+  .am-hero-lead {
+    font-size: 0.78rem;
+    margin-bottom: 12px;
+  }
+
   .am-features-grid { grid-template-columns: 1fr; }
-  .am-collab { flex-direction: column; gap: 16px; }
+
+  .am-collab { flex-direction: column; gap: 14px; }
   .am-collab-divider { flex-direction: row; gap: 10px; }
-  .am-dev-card { grid-template-columns: 56px 1fr; gap: 0 12px; padding: 14px 16px; }
-  .am-step-card-head { flex-wrap: wrap; gap: 12px; }
+
+  .am-section { padding: 24px 14px 16px; }
+
+  .am-dev-card { grid-template-columns: 52px 1fr; gap: 0 10px; padding: 12px 14px; }
+  .am-dev-avatar-wrap, .am-dev-avatar, .am-dev-avatar-fallback { width: 46px; height: 46px; }
+  .am-dev-num { font-size: 1.8rem; }
+
+  .am-step-card-head { flex-wrap: wrap; gap: 10px; padding: 12px 14px 10px; }
+  .am-step-card-body { padding: 12px 14px 16px; }
   .am-step-role { align-self: auto; }
-  .am-step-bubble { width: 48px; height: 48px; border-radius: 12px; }
-  .am-step-title { font-size: 1rem; }
-  .am-step-desc { font-size: 0.92rem; }
+  .am-step-bubble { width: 44px; height: 44px; border-radius: 11px; }
+  .am-step-title { font-size: 0.95rem; }
+  .am-step-desc { font-size: 0.85rem; line-height: 1.7; }
+  .am-step-note { font-size: 0.82rem; padding: 10px 12px; gap: 8px; }
+
+  .am-footer { padding: 28px 16px 36px; }
+  .am-footer-stack, .am-footer-copy { font-size: 0.64rem; }
+
+  /* profile card on tiny screens */
+  .am-profile-card { padding: 32px 20px 24px; max-width: 100%; border-radius: 20px; }
+  .am-profile-photo-wrap, .am-profile-photo, .am-profile-photo-fallback { width: 90px; height: 90px; }
+  .am-profile-name { font-size: 1.5rem; }
+  .am-profile-desc { font-size: 0.76rem; }
 }
 
 /* ── Reduced motion ───────────────────────────────────────── */
