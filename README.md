@@ -47,7 +47,7 @@
 
 ## Overview
 
-FleetDispatch V2 replaces paper-based vehicle logbooks with a **centralized, real-time platform** covering the full lifecycle of fleet operations — from employee booking requests to trip completion, fuel cost tracking, driver compliance, and exportable financial reporting.
+FleetDispatch V2 is a **centralized, real-time platform** covering the full lifecycle of fleet operations — from employee booking requests to trip completion, fuel cost tracking, driver compliance, and exportable financial reporting.
 
 > **Two portals. One system.**
 > - <img src="https://api.iconify.design/bi/shield-lock-fill.svg?color=%23006205" width="14" height="14" alt=""> **Admin Dashboard** — full fleet control, booking approvals, driver and vehicle management, financial records
@@ -124,7 +124,7 @@ FleetDispatch V2 replaces paper-based vehicle logbooks with a **centralized, rea
 - <img src="https://api.iconify.design/bi/lock-fill.svg?color=%23555555" width="13" height="13" alt=""> **Role-based access** — admin credentials required for the dashboard; employee portal is publicly accessible
 - <img src="https://api.iconify.design/bi/book.svg?color=%23555555" width="13" height="13" alt=""> **Built-in User Manual** — interactive step-by-step guide accessible via the Help button at any time
 - <img src="https://api.iconify.design/bi/globe.svg?color=%23555555" width="13" height="13" alt=""> **Browser-based** — no app install required; works on any device
-- <img src="https://api.iconify.design/bi/file-earmark-x.svg?color=%23555555" width="13" height="13" alt=""> **Zero-paper workflow** — every step from request to return is fully digital
+- <img src="https://api.iconify.design/bi/file-earmark-x.svg?color=%23555555" width="13" height="13" alt=""> **Fully digital workflow** — every step from request to return is handled online
 
 ---
 

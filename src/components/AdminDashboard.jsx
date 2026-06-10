@@ -122,6 +122,7 @@ export default function AdminDashboard() {
   const [isFetching, setIsFetching]     = useState(false);
   const [toast, setToast]               = useState({ msg: '', type: '' });
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [sidebarOpen, setSidebarOpen]   = useState(false);
   const [vehicleSort, setVehicleSort]   = useState('name_asc');
 
   const [adminUser, setAdminUser]             = useState({});
@@ -249,6 +250,11 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  useEffect(() => {
+    document.body.style.overflow = sidebarOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
 
   useEffect(() => {
     if (tab === 'logs') {
@@ -458,7 +464,14 @@ export default function AdminDashboard() {
   // ── Render ────────────────────────────────────────────────
   return (
     <div className="admin-root">
-      <aside className="admin-sidebar">
+      {sidebarOpen && <div className="admin-sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
+
+      <aside className={`admin-sidebar${sidebarOpen ? ' admin-sidebar-open' : ''}`}>
+        <button className="admin-sidebar-close" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
         <div className="admin-logo">
           {/* Primary brand — large app-icon style */}
           <div className="admin-logo-primary">
@@ -482,7 +495,7 @@ export default function AdminDashboard() {
           <div
             key={n.key}
             className={`admin-nav ${tab === n.key ? 'active' : ''}`}
-            onClick={() => setTab(n.key)}
+            onClick={() => { setTab(n.key); setSidebarOpen(false); }}
           >
             <span className="admin-icon">{NAV_ICONS[n.key]}</span>
             <span>{n.label}</span>
@@ -501,6 +514,11 @@ export default function AdminDashboard() {
 
       <main className="admin-main">
         <div className="admin-topbar">
+          <button className="admin-hamburger" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
           <h1>{NAV.find(n => n.key === tab)?.label}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             {isFetching && (

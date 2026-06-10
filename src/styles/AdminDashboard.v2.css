@@ -1363,23 +1363,181 @@
 
 /* ================= RESPONSIVE ADJUSTMENTS ================= */
 
+/* Hamburger button — hidden on desktop, shown on mobile */
+.admin-hamburger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border: none;
+  background: rgba(0, 98, 5, 0.08);
+  border-radius: 8px;
+  color: var(--ad-brand);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.admin-hamburger:hover { background: rgba(0, 98, 5, 0.14); }
+.admin-hamburger svg { display: block; }
+
+/* Close button inside sidebar — hidden on desktop */
+.admin-sidebar-close {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.admin-sidebar-close:hover { background: rgba(255, 255, 255, 0.22); }
+
+/* Mobile sidebar overlay backdrop */
+.admin-sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 998;
+  animation: overlayFadeIn 0.2s ease;
+}
+@keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
 @media (max-width: 1024px) {
   .admin-sidebar { width: 220px; flex: 0 0 220px; }
   .admin-card, .admin-stats-grid { margin-left: 18px; margin-right: 18px; }
 }
 
 @media (max-width: 768px) {
-  .admin-root { flex-direction: column; }
-  .admin-sidebar { position: sticky; top: 0; width: 100%; height: auto; flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; z-index: 1000;}
-  .admin-main { overflow: visible; }
+  /* Show hamburger, hide nothing else */
+  .admin-hamburger { display: inline-flex; }
+  .admin-sidebar-close { display: flex; }
+
+  /* Root stays row — sidebar is now an off-canvas drawer */
+  .admin-root { flex-direction: row; overflow: hidden; }
+
+  /* Sidebar: fixed off-screen drawer */
+  .admin-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100dvh;
+    width: 272px;
+    flex: 0 0 272px;
+    z-index: 999;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    box-shadow: none;
+  }
+  .admin-sidebar.admin-sidebar-open {
+    transform: translateX(0);
+    box-shadow: 6px 0 40px rgba(0, 0, 0, 0.35);
+  }
+
+  /* Main takes full width */
+  .admin-main { width: 100%; min-width: 0; overflow-x: hidden; }
+
+  /* Topbar mobile */
+  .admin-topbar { padding: 10px 14px; gap: 10px; flex-wrap: nowrap; }
+  .admin-topbar h1 { font-size: 15px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Collapse user button label on mobile */
+  .admin-user-info, .admin-user-chevron { display: none; }
+  .admin-user-btn { padding: 4px; border-radius: 50%; gap: 0; border-color: transparent; }
+
+  /* Stats: 2-column grid */
+  .admin-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    margin: 14px 14px 10px;
+    gap: 10px;
+  }
+  .admin-card { margin-left: 14px; margin-right: 14px; margin-bottom: 14px; }
+
+  /* Vehicle grid single column */
   .admin-vehicle-grid { grid-template-columns: 1fr; }
-  .admin-table-scroll { max-height: calc(100vh - 180px); }
+
+  /* Tables: remove fixed max-height, allow natural scroll */
+  .admin-table-scroll { max-height: none; }
+
+  /* Modal: bottom-sheet on mobile */
+  .admin-overlay, .modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .admin-modal, .modal-content.modal-large {
+    max-width: 100%;
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+    max-height: 92dvh;
+    animation: modalSlideUpMobile 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes modalSlideUpMobile {
+    from { transform: translateY(60px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
   .admin-modal-body-split { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 600px) {
-  .admin-logo-sep, .admin-logo-secondary, .admin-footer { display: none; }
-  .admin-nav { min-width: 45%; justify-content: center; }
+  /* Stats: single column */
+  .admin-stats-grid {
+    grid-template-columns: 1fr;
+    margin: 12px 12px 8px;
+    gap: 8px;
+  }
+  .admin-card { margin-left: 12px; margin-right: 12px; margin-bottom: 12px; }
+
+  /* Tables */
   .admin-table { font-size: 12px; }
-  .admin-actions { flex-wrap: wrap; }
+  .admin-table th, .admin-table td { padding: 9px 10px; }
+
+  /* Action buttons wrap */
+  .admin-actions { flex-wrap: wrap; gap: 6px; }
+  .admin-btn { padding: 7px 10px; font-size: 11.5px; }
+
+  /* Topbar */
+  .admin-topbar { padding: 10px 12px; }
+  .admin-topbar h1 { font-size: 14px; }
+
+  /* Toast full width */
+  .admin-toast { right: 12px; left: 12px; max-width: calc(100vw - 24px); top: 12px; }
+
+  /* Driver filter bar */
+  .driver-filter-bar { gap: 4px; padding: 10px 12px; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+  .driver-filter-tab { padding: 5px 10px; font-size: 11.5px; flex-shrink: 0; }
+
+  /* Card headers and modal padding */
+  .admin-card-header { padding: 10px 14px; flex-wrap: wrap; }
+  .admin-modal-header, .modal-header { padding: 14px 16px; }
+  .admin-modal-body, form { padding: 16px; }
+  .admin-modal-footer, .form-actions { padding: 12px 16px; flex-wrap: wrap; gap: 8px; }
+  .admin-modal-footer button, .form-actions button { flex: 1; min-width: 0; }
+
+  /* Vehicle detail banner */
+  .vdetail-banner { padding: 14px 16px; }
+  .vdetail-banner-icon { width: 44px; height: 44px; border-radius: 12px; }
+  .vdetail-banner-name { font-size: 17px; }
+  .vdetail-plate-row { padding: 12px 16px; }
+  .vdetail-specs { padding-top: 12px; }
+
+  /* Form rows stack */
+  .form-row { grid-template-columns: 1fr; gap: 12px; }
+
+  /* Stat card tighter */
+  .admin-stat-card { padding: 12px; gap: 10px; }
+  .admin-stat-icon { width: 38px; height: 38px; border-radius: 10px; }
+  .admin-stat-info h2 { font-size: 20px; }
 }
