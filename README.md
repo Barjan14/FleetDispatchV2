@@ -20,7 +20,7 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vite.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
-[![Vercel](https://img.shields.io/badge/Deployed-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com)
+[![Vercel](https://img.shields.io/badge/Deployed-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://darxfleetdispatch.vercel.app/?fbclid=IwY2xjawSWH4pleHRuA2FlbQIxMABicmlkETFpaDVzeWJMM3JQZ0xSMTdtc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHulZHlRhLJQjw-_EpJ95ACNKC2j-b4k_US6rCTzdanQg6dYzCZcQD2p_pzlG_aem_Mq666_OZf91An2BNN-YUPA)
 
 [![Last Commit](https://img.shields.io/github/last-commit/Barjan14/FleetDispatchV2?style=flat-square&color=006205)](https://github.com/Barjan14/FleetDispatchV2/commits/main)
 [![Repo Size](https://img.shields.io/github/repo-size/Barjan14/FleetDispatchV2?style=flat-square&color=006205)](https://github.com/Barjan14/FleetDispatchV2)
