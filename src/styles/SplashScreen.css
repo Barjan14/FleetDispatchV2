@@ -1,0 +1,210 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
+
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: linear-gradient(150deg, #021505 0%, #003a03 50%, #00451a 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: opacity 0.65s ease;
+}
+
+.splash-screen.splash-fadeout {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* subtle radial glow behind content */
+.splash-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 55% at 50% 42%, rgba(0, 98, 5, 0.45) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* bottom accent line */
+.splash-screen::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent 0%, #fdd117 40%, #006205 70%, transparent 100%);
+  animation: splashLineIn 0.8s 0.5s ease forwards;
+  opacity: 0;
+}
+
+@keyframes splashLineIn {
+  to { opacity: 1; }
+}
+
+/* ── dot grid overlay ─────────────────────────────── */
+.splash-dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.045) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+}
+
+/* ── main content stack ───────────────────────────── */
+.splash-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+/* ── logo ─────────────────────────────────────────── */
+.splash-logo-wrap {
+  animation: splashLogoIn 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  opacity: 0;
+}
+
+@keyframes splashLogoIn {
+  from { opacity: 0; transform: scale(0.65) translateY(18px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.splash-logo {
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 0 28px rgba(253, 209, 23, 0.55))
+    drop-shadow(0 4px 16px rgba(0, 0, 0, 0.6));
+}
+
+/* ── brand text ───────────────────────────────────── */
+.splash-brand {
+  text-align: center;
+  animation: splashTextIn 0.55s 0.18s ease forwards;
+  opacity: 0;
+}
+
+@keyframes splashTextIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.splash-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 3.25rem;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1;
+  text-shadow:
+    0 0 40px rgba(253, 209, 23, 0.35),
+    0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.splash-sub {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 400;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(255, 190, 38, 0.82);
+  margin: 0.45rem 0 0;
+}
+
+/* ── DAR label ────────────────────────────────────── */
+.splash-agency {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.38);
+  margin: 0.15rem 0 0;
+}
+
+/* ── loading bar ──────────────────────────────────── */
+.splash-bar-wrap {
+  width: 180px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+  animation: splashBarIn 0.3s 0.38s ease forwards;
+  opacity: 0;
+}
+
+@keyframes splashBarIn {
+  to { opacity: 1; }
+}
+
+.splash-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #006205 0%, #fdd117 100%);
+  border-radius: 999px;
+  animation: splashBarFill 1.85s 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes splashBarFill {
+  0%   { width: 0%; }
+  55%  { width: 70%; }
+  100% { width: 100%; }
+}
+
+/* ── car sweep ────────────────────────────────────── */
+.splash-car-strip {
+  position: absolute;
+  bottom: 48px;
+  left: 0;
+  right: 0;
+  height: 72px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.splash-car {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 72px;
+  width: auto;
+  filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.55));
+  animation: splashCarDrive 2.1s 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  opacity: 0;
+}
+
+@keyframes splashCarDrive {
+  0%   { transform: translateX(-18vw); opacity: 0; }
+  6%   { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { transform: translateX(108vw); opacity: 0; }
+}
+
+/* ── ground line under car ────────────────────────── */
+.splash-ground {
+  position: absolute;
+  bottom: 46px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 20%, rgba(255,255,255,0.08) 80%, transparent 100%);
+  z-index: 2;
+}
+
+/* ── mobile tweaks ────────────────────────────────── */
+@media (max-width: 480px) {
+  .splash-title  { font-size: 2.5rem; }
+  .splash-logo   { width: 72px; height: 72px; }
+  .splash-bar-wrap { width: 140px; }
+  .splash-car    { height: 52px; }
+  .splash-car-strip { bottom: 36px; height: 52px; }
+  .splash-ground { bottom: 34px; }
+}
