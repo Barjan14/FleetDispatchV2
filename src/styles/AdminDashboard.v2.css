@@ -1191,6 +1191,8 @@
   align-items: center;
   padding: 18px;
   z-index: 3000;
+   
+  overflow-y:auto;
 }
 
 .admin-modal, .modal-content.modal-large {
