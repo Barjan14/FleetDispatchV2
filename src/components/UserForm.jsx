@@ -3,7 +3,7 @@ import '../styles/UserForm.css'
 import { supabase } from '../supabaseClient'
 import { useNavigate } from 'react-router-dom'
 
-const DEPARTMENTS = ['RD', 'ARDO', 'RPBDD', 'RECORDS', 'LEGAL', 'SPLIT UPTOWN', 'SPLIT DOWNTOWN', 'LTI/LTSP', 'SUPPLY', 'MOTOR POLE', 'COA', 'SPECIAL CONCERN', 'LD', 'IU', 'ARMIC', 'BUDGET/ACCOUNTING', 'CASHIER', 'FINANCE', 'GAD', 'DARAB',  'Other']
+const DEPARTMENTS = ['RD', 'ARDO', 'RPBDD', 'RECORDS', 'LEGAL', 'SPLIT UPTOWN', 'SPLIT DOWNTOWN', 'LTI/LTSP', 'SUPPLY', 'MOTORPOOL', 'COA', 'SPECIAL CONCERNS', 'LD', 'IU', 'RMIC', 'BUDGET/ACCOUNTING', 'CASHIER', 'FINANCE', 'GAD', 'DARAB',  'Other']
 const PURPOSES = ['Official', 'Personal']
 
 /* ── Icons ── */
@@ -324,9 +324,9 @@ export default function DispatchForm() {
                     {errors.employeeName && <span className="fd-error">{errors.employeeName}</span>}
                   </div>
                   <div className="fd-field">
-                    <label>Department</label>
+                    <label>Office</label>
                     <select value={form.department} onChange={e => set('department', e.target.value)} className={errors.department ? 'error' : ''}>
-                      <option value="">Select department</option>
+                      <option value="">Select office</option>
                       {DEPARTMENTS.map(d => <option key={d}>{d}</option>)}
                     </select>
                     {errors.department && <span className="fd-error">{errors.department}</span>}
