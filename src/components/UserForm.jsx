@@ -3,7 +3,7 @@ import '../styles/UserForm.css'
 import { supabase } from '../supabaseClient'
 import { useNavigate } from 'react-router-dom'
 
-const DEPARTMENTS = ['RD', 'ARDO', 'RPBDD', 'RECORDS', 'LEGAL', 'SPLIT UPTOWN', 'SPLIT DOWNTOWN', 'LTI/LTSP', 'SUPPLY', 'MOTORPOOL', 'COA', 'SPECIAL CONCERNS', 'LD', 'IU', 'RMIC', 'BUDGET/ACCOUNTING', 'CASHIER', 'FINANCE', 'GAD', 'DARAB',  'Other']
+const DEPARTMENTS = ['RD', 'ARDO', 'RPBDD', 'RECORDS', 'LEGAL', 'SPLIT UPTOWN', 'SPLIT DOWNTOWN', 'LTI/LTSP', 'SUPPLY', 'MOTORPOOL', 'COA', 'SPECIAL CONCERNS', 'LD', 'IU', 'RMIC', 'ACCOUNTING', 'BUDGET', 'CASHIER', 'DARAB',  'Other']
 const PURPOSES = ['Official', 'Personal']
 
 /* ── Icons ── */
