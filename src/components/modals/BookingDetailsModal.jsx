@@ -161,7 +161,7 @@ export default function BookingDetailsModal({ booking, vehicles = [], onClose })
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <DetailBox icon={<Icons.User />} label="Employee Name" value={reqInfo.name} />
               <DetailBox icon={<Icons.Mail />} label="Email Address" value={reqInfo.email} />
-              <DetailBox fullWidth icon={<Icons.Briefcase />} label="Position / Department" value={reqInfo.dept} />
+              <DetailBox fullWidth icon={<Icons.Briefcase />} label="Office" value={reqInfo.dept} />
             </div>
           </div>
 
