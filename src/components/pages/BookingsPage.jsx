@@ -61,6 +61,7 @@ export function extractRequesterInfo(booking, allVehicles = []) {
   let dept = booking.department || booking.position || booking.user?.profile?.department || booking.user?.department || '';
   let email = booking.email || booking.user?.email || 'Not Provided';
   let plate = booking.vehicle?.plate_number || '';
+  let details = '';
 
   // Cross-reference the vehicle database if we only have an ID
   if (!plate && booking.vehicle_id && allVehicles.length > 0) {
@@ -85,17 +86,20 @@ export function extractRequesterInfo(booking, allVehicles = []) {
     const empMatch = notes.match(/Employee:\s*([^\n\r\t]+)/i);
     const deptMatch = notes.match(/(?:Dep|Dept|Department):\s*([^\n\r\t]+)/i);
     const plateMatch = notes.match(/(?:Plate|Plate No):\s*([^\n\r\t]+)/i);
+    const detailsMatch = notes.match(/Details:\s*([\s\S]*?)(?=\s*(?:Employee:|Department:|Passengers:|Priority:|$))/i);
 
     if (empMatch && empMatch[1]) name = empMatch[1].trim();
     if (deptMatch && deptMatch[1]) dept = deptMatch[1].trim();
     if (plateMatch && plateMatch[1] && !plate) plate = plateMatch[1].trim();
+    if (detailsMatch && detailsMatch[1]) details = detailsMatch[1].trim();
   }
 
   return { 
     name: name || 'Unknown User', 
     dept: dept || 'Not Provided', 
     email, 
-    plate: plate || 'N/A' 
+    plate: plate || 'N/A',
+    details: details || ''
   };
 }
 
