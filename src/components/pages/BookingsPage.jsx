@@ -68,11 +68,24 @@ export function extractRequesterInfo(booking, allVehicles = []) {
     if (foundCar) plate = foundCar.plate_number;
   }
 
-  if (booking.admin_notes) {
-    const empMatch = booking.admin_notes.match(/Employee:\s*(.*?)(?=\s*(?:Dep:|Dept:|Department:|Plate:|Plate No:|$))/i);
-    const deptMatch = booking.admin_notes.match(/(?:Dep:|Dept:|Department:)\s*(.*?)(?=\s*(?:Plate:|Plate No:|$))/i);
-    const plateMatch = booking.admin_notes.match(/(?:Plate:|Plate No:)\s*(.*?)(?=\s*(?:Dep:|Dept:|Employee:|$))/i);
+  // if (booking.admin_notes) {
+  //   const empMatch = booking.admin_notes.match(/Employee:\s*(.*?)(?=\s*(?:Dep:|Dept:|Department:|Plate:|Plate No:|$))/i);
+  //   const deptMatch = booking.admin_notes.match(/(?:Dep:|Dept:|Department:)\s*(.*?)(?=\s*(?:Plate:|Plate No:|$))/i);
+  //   const plateMatch = booking.admin_notes.match(/(?:Plate:|Plate No:)\s*(.*?)(?=\s*(?:Dep:|Dept:|Employee:|$))/i);
     
+  //   if (empMatch && empMatch[1]) name = empMatch[1].trim();
+  //   if (deptMatch && deptMatch[1]) dept = deptMatch[1].trim();
+  //   if (plateMatch && plateMatch[1] && !plate) plate = plateMatch[1].trim();
+  // }
+
+  if (booking.admin_notes) {
+    // Parse key-value lines (handles both \n and inline text separated by labels)
+    const notes = booking.admin_notes;
+
+    const empMatch = notes.match(/Employee:\s*([^\n\r\t]+)/i);
+    const deptMatch = notes.match(/(?:Dep|Dept|Department):\s*([^\n\r\t]+)/i);
+    const plateMatch = notes.match(/(?:Plate|Plate No):\s*([^\n\r\t]+)/i);
+
     if (empMatch && empMatch[1]) name = empMatch[1].trim();
     if (deptMatch && deptMatch[1]) dept = deptMatch[1].trim();
     if (plateMatch && plateMatch[1] && !plate) plate = plateMatch[1].trim();
