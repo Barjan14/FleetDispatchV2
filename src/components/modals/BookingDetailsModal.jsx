@@ -148,7 +148,22 @@ export default function BookingDetailsModal({ booking, vehicles = [], onClose })
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <DetailBox fullWidth icon={<Icons.MapPin />} label="Destination" value={booking.destination || 'Not Specified'} />
-              <DetailBox fullWidth icon={<Icons.FileText />} label="Purpose of Trip" value={booking.purpose || 'Not Specified'} />
+              {/* <DetailBox fullWidth icon={<Icons.FileText />} label="Purpose of Trip" value={booking.purpose || 'Not Specified'} /> */}
+              <DetailBox 
+                fullWidth
+                icon={<Icons.FileText />} 
+                label="Purpose of Trip" 
+                value={
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span>{booking.purpose || 'Not Specified'}</span>
+                    {reqInfo.details && (
+                      <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
+                        Details: {reqInfo.details}
+                      </span>
+                    )}
+                  </div>
+                } 
+              />
               <DetailBox icon={<Icons.Calendar />} label="Departure Schedule" value={formatLongDate(booking.start_datetime)} />
               <DetailBox icon={<Icons.Calendar />} label="Return Schedule" value={formatLongDate(booking.end_datetime)} />
             </div>
