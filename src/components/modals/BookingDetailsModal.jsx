@@ -158,7 +158,7 @@ export default function BookingDetailsModal({ booking, vehicles = [], onClose })
                     <span>{booking.purpose || 'Not Specified'}</span>
                     {reqInfo.details && (
                       <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
-                        Details: {reqInfo.details}
+                        {reqInfo.details}
                       </span>
                     )}
                   </div>
